@@ -1,2 +1,2 @@
-# nui-web-components
-UI Web components "framework"
+# NUI the totally best web component framework.
+A collection of random web components.
