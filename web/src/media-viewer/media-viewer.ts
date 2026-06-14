@@ -1,4 +1,4 @@
-import { dispatchViewingFailedToLoadEvent, MediaType, MediaTypes, ControlsPlacement, controlsPlacementValues, defaultControlsPlacement, dispatchViewingItemChangedEvent } from './media-viewer-models.js';
+import { dispatchViewingFailedToLoadEvent, MediaType, MediaTypes, ControlsPlacement, controlsPlacementValues, defaultControlsPlacement, dispatchViewingItemChangedEvent, Subtitle } from './media-viewer-models.js';
 import type { MediaViewerControls } from './media-viewer-controls.js';
 import './media-viewer-controls.js';
 
@@ -19,7 +19,8 @@ const mediaAndMimeTypesFromExtension = new Map<string, MediaAndMimeType>([
   ['.tga',  [MediaType.Image, 'image/x-tga']],
   // Video
   ['.mp4', [MediaType.Video, 'video/mp4'] ],
-  ['.mkv', [MediaType.Video, 'video/x-matroska'] ],
+  // Technically 'video/x-matroska', but video/mp4 makes em play in chrome at least.
+  ['.mkv', [MediaType.Video, 'video/mp4']],
   ['.flv', [MediaType.Video, 'video/x-flv'] ],
   ['.webm',[MediaType.Video, 'video/webm'] ],
   ['.mov', [MediaType.Video, 'video/quicktime'] ],
@@ -42,7 +43,7 @@ const mimeTypesToMediaType = new Map<string, MediaTypes>(
 
 let _createdElements = 0;
 export class MediaViewer extends HTMLElement {
-  static observedAttributes = ['src', 'mime-type', 'parent', 'auto-height'];
+  static observedAttributes = ['src', 'mime-type', 'parent', 'auto-height', 'subtitles'];
 
   shadow: ShadowRoot;
   activeMediaType: MediaTypes = MediaType.Unknown;
@@ -215,6 +216,48 @@ export class MediaViewer extends HTMLElement {
     return this._viewItemElement!;
   }
 
+  private _subtitles: Subtitle[] | null = null;
+  get subtitles(): Subtitle[] | null {
+    if (this._subtitles) {
+      return this._subtitles;
+    }
+
+    const subtitlesRaw = this.getAttribute("subtitles");
+    if (!subtitlesRaw) {
+      return null;
+    }
+
+    let result: Subtitle[] = [];
+    const items = subtitlesRaw.split('|');
+    for (let i = 0; i < items.length; i += 3) {
+      const src = items[i];
+      const label = items[i + 1];
+      const srclang = items[i + 2];
+
+      if (!src || !label || !srclang) {
+        continue;
+      }
+
+      result.push({
+        src: src.trim(),
+        label: label.trim(),
+        srclang: srclang.trim(),
+      });
+    }
+
+    this._subtitles = result;
+    return result;
+  }
+
+  set subtitles(subtitles: Subtitle[] | null) {
+    this._subtitles = subtitles;
+    if (!subtitles) {
+      this.removeAttribute('subtitles');
+    } else {
+      const subtitlesRaw = subtitles.map(s => [s.src, s.label, s.srclang]).join(',');
+      this.setAttribute("subtitles", subtitlesRaw);
+    }
+  }
 
   get controlsElement(): MediaViewerControls | null {
     if (!this._controlsElement) {
@@ -328,9 +371,38 @@ export class MediaViewer extends HTMLElement {
     return undefined;
   }
 
+  renderSubtitles(): string {
+    const subtitles = this.subtitles;
+    if (!subtitles) {
+      return '';
+    }
+
+    let subtitlesHtml = '';
+
+    for (const subtitle of subtitles) {
+      // TODO: This should be setting or something.
+      const defaultHtml = subtitle.srclang === 'en' ? 'default' : '';
+
+      const html = `
+<track
+  label=${subtitle.label}
+  src="${subtitle.src}"
+  srclang=${subtitle.srclang}
+  kind="subtitles"
+  ${defaultHtml}
+/>`;
+      subtitlesHtml += html;
+    }
+
+    return subtitlesHtml;
+  }
+
   renderVideo(src: string, mimeType: string) {
+    const subtitlesHtml = this.renderSubtitles();
+
     this.viewItemElement.innerHTML = `<video controls autoplay draggable="false">
         <source src="${ src }" type="${ mimeType }">
+        ${subtitlesHtml}
       </video>`;
 
     const videoElement = this.viewItemElement.querySelector('video') as HTMLVideoElement;

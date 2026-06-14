@@ -9,7 +9,6 @@ export const MediaType = {
 } as const;
 export type MediaTypes = typeof MediaType[keyof typeof MediaType];
 
-
 export const defaultControlsPlacement: ControlsPlacement = 'page:left';
 export const ControlsPlacements = {
   PageLeft: 'page:left',
@@ -19,6 +18,13 @@ export const ControlsPlacements = {
 } as const;
 export type ControlsPlacement = typeof ControlsPlacements[keyof typeof ControlsPlacements];
 export const controlsPlacementValues = new Set<ControlsPlacement>([ControlsPlacements.PageLeft, ControlsPlacements.PageRight, ControlsPlacements.ItemLeft, ControlsPlacements.ItemRight]);
+
+/** .vtt files */
+export interface Subtitle {
+  src: string;
+  label: string;
+  srclang: string;
+}
 
 export const viewingItemChangedEvent = 'viewer:itemChanged';
 export const viewingFailedToLoadEvent = 'viewer:failedToLoad';
