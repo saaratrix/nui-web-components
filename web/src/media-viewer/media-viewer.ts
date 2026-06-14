@@ -42,7 +42,7 @@ const mimeTypesToMediaType = new Map<string, MediaTypes>(
 
 let _createdElements = 0;
 export class MediaViewer extends HTMLElement {
-  static observedAttributes = ['src', 'mime-type', 'parent', 'automatically-adjust-height'];
+  static observedAttributes = ['src', 'mime-type', 'parent', 'auto-height'];
 
   shadow: ShadowRoot;
   activeMediaType: MediaTypes = MediaType.Unknown;
@@ -60,6 +60,10 @@ export class MediaViewer extends HTMLElement {
 
     this.shadow.innerHTML = `
       <style>
+        :host, * {
+          box-sizing: border-box;
+        }
+      
         .container {
           line-height: 0;
         }
@@ -134,14 +138,14 @@ export class MediaViewer extends HTMLElement {
   }
 
   get automaticallyAdjustHeight(): boolean {
-    const value = this.getAttribute("automatically-adjust-height") ?? '';
+    const value = this.getAttribute("auto-height") ?? '';
     return value.toLowerCase() === 'true';
   }
 
   set automaticallyAdjustHeight(value: boolean | null) {
     value == null
-      ? this.removeAttribute('automatically-adjust-height')
-      : this.setAttribute('automatically-adjust-height', value ? 'true' : 'false');
+      ? this.removeAttribute('auto-height')
+      : this.setAttribute('auto-height', value ? 'true' : 'false');
 
     if (!value && this.viewItemElement?.firstElementChild) {
       (this.viewItemElement.firstElementChild as HTMLElement).style.maxHeight = '';
@@ -228,7 +232,7 @@ export class MediaViewer extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
-    if (name === 'automatically-adjust-height') {
+    if (name === 'auto-height') {
       const item = this.viewItemElement?.firstElementChild as HTMLElement | null;
       item && this.setMaxDimensions(item);
       return;
@@ -335,16 +339,34 @@ export class MediaViewer extends HTMLElement {
     videoElement.querySelector<HTMLSourceElement>('source')!.onerror = () => this.handleMediaError(src);
   }
 
-  private getOccupiedHeight(style: CSSStyleDeclaration): number {
-    return parseInt(style.paddingTop) + parseInt(style.paddingBottom);
+  private getOccupiedHeight(parentContainer: HTMLElement, itemStyle: CSSStyleDeclaration): number {
+    const parentStyle = window.getComputedStyle(parentContainer);
+    const bodyPaddingHeight = parseInt(parentStyle.paddingTop) + parseInt(parentStyle.paddingBottom);
+
+    const itemPaddingHeight = parseInt(itemStyle.paddingTop) + parseInt(itemStyle.paddingBottom);
+    let siblingHeight = 0;
+    if (parentContainer.childElementCount > 1) {
+      for (let i = 0; i < parentContainer.children.length; i++) {
+        const child = parentContainer.children.item(i);
+        if (!child || child === this || !(child instanceof HTMLElement) || child.offsetParent === null) {
+          continue;
+        }
+
+        const cs = window.getComputedStyle(child);
+        const siblingMargin = parseFloat(cs.marginTop || "0") + parseFloat(cs.marginBottom || "0");
+
+        siblingHeight += child.getBoundingClientRect().height + siblingMargin;
+      }
+    }
+
+    return bodyPaddingHeight + itemPaddingHeight + siblingHeight;
   }
 
   private setMaxDimensions(element: HTMLElement): void {
     const parentContainer = this.parentContainer;
     const viewItem = this.viewItemElement;
     const viewItemStyle = getComputedStyle(viewItem);
-
-    const maxHeight = window.innerHeight - this.getOccupiedHeight(viewItemStyle);
+    const maxHeight = window.innerHeight - this.getOccupiedHeight(parentContainer,  viewItemStyle);
 
     const horizontalPadding = parseInt(viewItemStyle.paddingLeft) + parseInt(viewItemStyle.paddingRight);
     const scrollbarWidth = 19;
