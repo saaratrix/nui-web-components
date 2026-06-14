@@ -1,0 +1,23 @@
+{
+  "name": "nui",
+  "version": "0.0.1",
+  "description": "UI Web Components",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saaratrix/nui-web-components.git"
+  },
+  "author": "Luna",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/saaratrix/nui-web-components/issues"
+  },
+  "homepage": "https://github.com/saaratrix/nui-web-components#readme",
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

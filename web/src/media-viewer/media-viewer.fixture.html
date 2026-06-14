@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            background-color: #2c2c38;
+            color: #e1e1e8;
+            min-height: 100dvh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <media-viewer
+        id="test-viewer"
+        src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+        controls-placement="page:left"
+    ></media-viewer>
+
+    <script src="media-viewer.js" type="module" ></script>
+
+    <div style="position: fixed; top: 0">
+        <button id="load-image">Load Image</button>
+        <button id="load-video">Load Video</button>
+        <div style="display: inline-block">
+            <label> Auto adjust height: <input id="auto-adjust" type="checkbox"></label>
+        </div>
+        <div style="display: inline-block">
+            <label>
+                Controls
+                <select id="controls">
+                    <option value="hide">hide</option>
+                    <option value="page:left" selected>page:left</option>
+                    <option value="page:right">page:right</option>
+                    <option value="item:left">item:left</option>
+                    <option value="item:right">item:right</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
+    <script>
+      const viewer = document.querySelector("media-viewer");
+
+      document.querySelector("#load-image").onclick = () => {
+        viewer.src = "https://picsum.photos/800/600";
+        viewer.mimeType = 'image/png';
+      };
+
+      document.querySelector("#load-video").onclick = () => {
+        viewer.src =
+          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+      };
+
+      document.getElementById('auto-adjust').onchange = function (){
+        viewer.automaticallyAdjustHeight = this.checked;
+      };
+
+      document.getElementById('controls').onchange = function() {
+        if (this.value === 'hide') {
+          viewer.controlsPlacement = null;
+        } else {
+          viewer.controlsPlacement = this.value;
+        }
+      }
+    </script>
+</body>
+</html>
