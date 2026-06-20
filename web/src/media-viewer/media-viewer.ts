@@ -298,7 +298,7 @@ export class MediaViewer extends HTMLElement {
     const src = this.src;
     const [mediaType, mimeType] = this.getTypes(src) ?? [];
     if (!mediaType || !mimeType) {
-      this.viewItemElement.replaceChildren();
+      this.viewItemElement.textContent = '';
       this._lastRender = undefined;
       this.activeMediaType = MediaType.Unknown;
       dispatchViewingItemChangedEvent(this.eventId, this, this.activeMediaType);
@@ -309,7 +309,7 @@ export class MediaViewer extends HTMLElement {
     }
 
     this.activeMediaType = mediaType;
-    this.viewItemElement.replaceChildren();
+    this.viewItemElement.textContent = '';
     this._lastRender = { src, mediaType };
 
     if (mediaType === MediaType.Image) {

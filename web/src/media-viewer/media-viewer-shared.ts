@@ -1,5 +1,4 @@
-const css = new CSSStyleSheet();
-css.replaceSync(`
+const sharedCSS = `
   .icon-action {
     padding: 5px;
     color: var(--color-text);
@@ -26,6 +25,33 @@ css.replaceSync(`
     color: var(--color-link-contrast);
     outline: 0;
   }
-`);
+`;
 
-export const mediaViewerSharedCSS = css;
+function supportsAdoptedStyleSheets(): boolean {
+  return (
+    "adoptedStyleSheets" in Document.prototype &&
+    "adoptedStyleSheets" in ShadowRoot.prototype &&
+    "replaceSync" in CSSStyleSheet.prototype
+  );
+}
+
+export function applyMediaViewerSharedCSS(shadowRoot: ShadowRoot) {
+  let useFallback = !supportsAdoptedStyleSheets();
+
+  try {
+    if (!useFallback) {
+      const css = new CSSStyleSheet();
+      css.replaceSync(sharedCSS);
+      shadowRoot.adoptedStyleSheets = [css];
+    }
+
+  } catch (e) {
+    useFallback = true;
+  }
+
+  if (useFallback) {
+    const style = document.createElement("style");
+    style.textContent = sharedCSS;
+    shadowRoot.appendChild(style);
+  }
+}

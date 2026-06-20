@@ -1,5 +1,5 @@
 import { MediaViewerItemChangedEvent, viewingItemChangedEvent } from './media-viewer-models.js';
-import { mediaViewerSharedCSS } from './media-viewer-shared.js';
+import { applyMediaViewerSharedCSS } from './media-viewer-shared.js';
 import { MediaViewerControls } from './media-viewer-controls';
 import { MediaViewer } from './media-viewer';
 
@@ -30,23 +30,24 @@ export class MediaViewerControlsRotate extends HTMLElement {
     super();
     this.shadow = this.attachShadow({ mode: 'open' });
 
-    this.shadow.adoptedStyleSheets = [mediaViewerSharedCSS]
-      this.shadow.innerHTML = `
-        <style>
-            .controls-rotate {
-                display: inline-flex;
-                gap: 0.5rem;
-            }
-            
-            .icon-action {
-            
-            }
-        </style>
-        <div class="controls-rotate">
-            <button class="rotate-left icon-action" title="Rotate 90° left.">⟲ 90°</button>
-            <button class="rotate-right icon-action" title="Rotate 90° right.">⟳ 90°</button>
-        </div>
-      `;
+    applyMediaViewerSharedCSS(this.shadow);
+
+    this.shadow.innerHTML = `
+      <style>
+          .controls-rotate {
+              display: inline-flex;
+              gap: 0.5rem;
+          }
+          
+          .icon-action {
+          
+          }
+      </style>
+      <div class="controls-rotate">
+          <button class="rotate-left icon-action" title="Rotate 90° left.">⟲ 90°</button>
+          <button class="rotate-right icon-action" title="Rotate 90° right.">⟳ 90°</button>
+      </div>
+    `;
   }
 
   connectedCallback () {
