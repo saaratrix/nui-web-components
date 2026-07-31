@@ -1,3 +1,4 @@
 ﻿web/node_modules
+web/src/progress-status/*.js
 web/src/media-viewer/*.js
 web/dist
