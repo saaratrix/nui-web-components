@@ -2,9 +2,10 @@ import type { ProgressStatusPopover } from './progress-status-popover.js';
 import './progress-status-popover.js';
 
 const defaultSpinnerSize = '2em';
+const defaultSpinnerDirection = 'spin-cw';
 
 export class ProgressStatus extends HTMLElement {
-  static observedAttributes = ['active', 'size'];
+  static observedAttributes = ['active', 'size', 'direction'];
 
   shadow: ShadowRoot;
   progressPopover: ProgressStatusPopover;
@@ -39,6 +40,7 @@ export class ProgressStatus extends HTMLElement {
         
         
         .spinner {
+          --spinner-direction: ${defaultSpinnerDirection};
           --spinner-size: ${defaultSpinnerSize};
           display: inline-block;
           width: var(--spinner-size);
@@ -49,12 +51,18 @@ export class ProgressStatus extends HTMLElement {
         }
         
         .active .spinner {
-            animation: spin 1.2s linear infinite;
+            animation: var(--spinner-direction) 1.2s linear infinite;
         }        
         
-        @keyframes spin {
+        @keyframes spin-cw {
             to {
                 transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes spin-ccw {
+            to {
+                transform: rotate(-360deg);
             }
         }
       </style>
@@ -118,6 +126,8 @@ export class ProgressStatus extends HTMLElement {
       this.onActiveChanged(newValue);
     } else if (name === 'size') {
       this.onSizeChanged(newValue);
+    } else if (name === 'direction') {
+      this.onDirectionChanged(newValue);
     }
   }
 
@@ -192,6 +202,11 @@ export class ProgressStatus extends HTMLElement {
     }
 
     this.spinner.style.setProperty('--spinner-size', this.size);
+  }
+
+  onDirectionChanged(value: unknown | null) {
+    const direction = value === 'ccw' ? 'spin-ccw' : 'spin-cw';
+    this.spinner.style.setProperty('--spinner-direction', direction);
   }
 }
 
