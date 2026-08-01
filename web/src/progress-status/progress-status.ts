@@ -1,12 +1,21 @@
 import type { ProgressStatusPopover } from './progress-status-popover.js';
 import './progress-status-popover.js';
 
+const defaultSpinnerSize = '2em';
+
 export class ProgressStatus extends HTMLElement {
-  static observedAttributes = ['active'];
+  static observedAttributes = ['active', 'size'];
 
   shadow: ShadowRoot;
-  detailedPopover: ProgressStatusPopover;
-  isActive: boolean = false;
+  progressPopover: ProgressStatusPopover;
+  size: string = defaultSpinnerSize;
+  isStickyPopover = false;
+  canShowPopover = false;
+  /** If the progress spinner is active */
+  isActive = false;
+
+  slotContent: HTMLSlotElement;
+  slotPopover: HTMLSlotElement;
 
   constructor() {
     super();
@@ -18,8 +27,10 @@ export class ProgressStatus extends HTMLElement {
         }
         
         .container {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;;
             opacity: 0;
-            /*transition: opacity 0.075s;*/
         }
         
         .active {
@@ -28,20 +39,18 @@ export class ProgressStatus extends HTMLElement {
         
         
         .spinner {
+          --spinner-size: ${defaultSpinnerSize};
           display: inline-block;
-          width: 1em;
-          height: 1em;
-          /*border: 0.18em solid currentColor;*/
-          /*border-top-color: transparent;*/
-          border: 0.18em solid rgba(0, 0, 0, 0.2);
+          width: var(--spinner-size);
+          height: var(--spinner-size);
+          border: calc(0.18 * var(--spinner-size)) solid rgba(0, 0, 0, 0.2);
           border-top-color: currentColor;
           border-radius: 50%;
         }
         
         .active .spinner {
             animation: spin 1.2s linear infinite;
-        }
-        
+        }        
         
         @keyframes spin {
             to {
@@ -52,31 +61,137 @@ export class ProgressStatus extends HTMLElement {
 
       <div class="container">
         <span class="spinner"></span>
-        <slot></slot>
+        <slot name="content"></slot>
       </div>
       <progress-status-popover>
-        <slot name="popover-content" slot="popover-content"></slot>
+        <slot name="popover" slot="content"></slot>
       </progress-status-popover>
     `;
 
-    this.detailedPopover = this.shadow.querySelector('progress-status-popover') as ProgressStatusPopover;
+    this.progressPopover = this.shadow.querySelector('progress-status-popover') as ProgressStatusPopover;
+    this.slotContent = this.shadow.querySelector('slot[name="content"]') as HTMLSlotElement;
+    this.slotPopover = this.shadow.querySelector('slot[name="popover"]') as HTMLSlotElement;
+
+    this.onPopoverContentChanged();
+    this.slotPopover.addEventListener('slotchange', (_: Event) => {
+      this.onPopoverContentChanged();
+    });
   }
 
-  private _container: HTMLElement | null = null;
+  private hasPopoverContent = false;
+  private onPopoverContentChanged(): void {
+    if (this.slotPopover.assignedElements().length > 0) {
+      if (!this.hasPopoverContent) {
+        this.container.addEventListener('pointerenter', this.onContainerPointerEnter);
+        this.container.addEventListener('pointerleave', this.onContainerPointerLeave);
+        this.container.addEventListener('click', this.onContainerClick);
+      }
+      this.hasPopoverContent = true;
+      this.canShowPopover = true;
+
+    } else {
+      if (this.hasPopoverContent) {
+        this.container.removeEventListener('pointerleave', this.onContainerPointerLeave);
+        this.container.removeEventListener('pointerenter', this.onContainerPointerEnter);
+        this.progressPopover.showOrHide(false);
+      }
+      this.hasPopoverContent = false;
+    }
+  }
+
+  #container: HTMLElement | null = null;
   get container(): HTMLElement {
-    this._container ??= this.shadow.querySelector('.container') as HTMLElement;
-    return this._container;
+    return this.#container ||= this.shadow.querySelector('.container') as HTMLElement;
   }
 
-  attributeChangedCallback(name: string, oldValue: unknown | null, newValue: unknown | null) {
-    this.isActive = newValue !== null;
-    this.detailedPopover.showOrHide(this.isActive);
+  #spinner: HTMLElement | null = null;
+  get spinner(): HTMLElement {
+    return this.#spinner ||= this.container.querySelector('.spinner') as HTMLElement;
+  }
+
+  get isPopoverVisible(): boolean {
+    return this.progressPopover.dialog.open;
+  }
+
+  attributeChangedCallback(name: string, _: unknown | null, newValue: unknown | null) {
+    if (name === 'active') {
+      this.onActiveChanged(newValue);
+    } else if (name === 'size') {
+      this.onSizeChanged(newValue);
+    }
+  }
+
+  private onContainerClick = (_: Event): void => {
+    this.isStickyPopover = !this.isStickyPopover;
+    if (this.isStickyPopover) {
+      document.addEventListener('click', this.outsideClick);
+    } else {
+      document.removeEventListener('click', this.outsideClick);
+    }
+  }
+
+  private outsideClick = (event: Event): void => {
+    if (event.target && this.contains(event.target as HTMLElement)) {
+      return;
+    }
+
+    if (this.isPopoverVisible) {
+      this.hideProgressPopover();
+    } else  {
+      document.removeEventListener('click', this.outsideClick);
+    }
+
+    this.isStickyPopover = false;
+  }
+
+  private onContainerPointerEnter = (e: Event) => {
+    this.showProgressPopover();
+  }
+
+  private onContainerPointerLeave = (e: Event) => {
+    if (!this.isStickyPopover) {
+      this.hideProgressPopover();
+    }
+  }
+
+  private showProgressPopover(): void {
+    if (!this.canShowPopover || this.isPopoverVisible) {
+      return;
+    }
+
+    this.progressPopover.showOrHide(true);
+  }
+
+  private hideProgressPopover(): void {
+    if (!this.isPopoverVisible) {
+      return;
+    }
+    this.isStickyPopover = false;
+    document.removeEventListener('click', this.outsideClick);
+
+    this.progressPopover.showOrHide(false);
+  }
+
+  onActiveChanged(value: unknown | null) {
+    this.isActive = value !== null;
 
     if (this.isActive) {
       this.container.classList.add('active');
     } else {
       this.container.classList.remove('active');
     }
+  }
+
+  onSizeChanged(value: unknown | null) {
+    if (!value) {
+      this.size = defaultSpinnerSize;
+    } else if (!isNaN(Number(value))) {
+      this.size = `${value}px`;
+    } else {
+      this.size = value as string;
+    }
+
+    this.spinner.style.setProperty('--spinner-size', this.size);
   }
 }
 

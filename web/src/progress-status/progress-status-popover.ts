@@ -13,9 +13,11 @@ export class ProgressStatusPopover extends HTMLElement {
       </style>
 
       <dialog>
-        <slot name="popover-content"></slot>
+        <slot name="content"></slot>
       </dialog>
     `;
+
+    this.dialog.open = false;
   }
 
   _dialog: HTMLDialogElement | null = null;
