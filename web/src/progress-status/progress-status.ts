@@ -5,7 +5,7 @@ const defaultSpinnerSize = '2em';
 const defaultSpinnerDirection = 'spin-cw';
 
 export class ProgressStatus extends HTMLElement {
-  static observedAttributes = ['active', 'size', 'direction'];
+  static observedAttributes = ['active', 'size', 'direction', 'placement'];
 
   shadow: ShadowRoot;
   progressPopover: ProgressStatusPopover;
@@ -23,19 +23,21 @@ export class ProgressStatus extends HTMLElement {
     this.shadow = this.attachShadow({ mode: 'open' });
     this.shadow.innerHTML = `
       <style>
-        :host, * {
-          box-sizing: border-box;
+        :host {
+            display: inline-block;
+            position: relative;
         }
         
         .container {
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;;
-            opacity: 0;
+            visibility: hidden;
+            user-select: none;
         }
         
         .active {
-            opacity: 1;
+            visibility: visible;
         }
         
         
@@ -77,6 +79,7 @@ export class ProgressStatus extends HTMLElement {
     `;
 
     this.progressPopover = this.shadow.querySelector('progress-status-popover') as ProgressStatusPopover;
+    this.progressPopover.parent = this;
     this.slotContent = this.shadow.querySelector('slot[name="content"]') as HTMLSlotElement;
     this.slotPopover = this.shadow.querySelector('slot[name="popover"]') as HTMLSlotElement;
 

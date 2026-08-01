@@ -1,4 +1,11 @@
+// Note: currently only supporting top.
+import { ProgressStatus } from './progress-status';
+
+export type PopoverPlacement = 'top';
+
 export class ProgressStatusPopover extends HTMLElement {
+  static observedAttributes = ['placement'];
+  parent!: ProgressStatus;
   shadow: ShadowRoot;
 
   constructor() {
@@ -7,8 +14,14 @@ export class ProgressStatusPopover extends HTMLElement {
 
     this.shadow.innerHTML = `
       <style>
-        :host, * {
-          box-sizing: border-box;
+        :host {
+            position: absolute;
+        }
+        dialog {
+            /* Max content is needed or the dialog takes minimum space. */
+            inline-size: max-content;
+            max-inline-size: 80vw;
+            box-sizing: border-box;
         }
       </style>
 
@@ -26,6 +39,12 @@ export class ProgressStatusPopover extends HTMLElement {
     return this._dialog!;
   }
 
+  attributeChangedCallback(name: string, _: unknown | null, newValue: unknown | null) {
+    if (name === 'placement') {
+      this.positionPopover(newValue as string | null, this.parent!);
+    }
+  }
+
   public showOrHide(state: boolean) {
     if (state) {
       this.show();
@@ -40,6 +59,7 @@ export class ProgressStatusPopover extends HTMLElement {
     }
 
     this.dialog.show();
+    this.positionPopover(this.getAttribute('placement'), this.parent!);
   }
 
   public hide(): void {
@@ -48,6 +68,54 @@ export class ProgressStatusPopover extends HTMLElement {
     }
     this.dialog.close();
   }
+
+  private positionPopover(placementValue: string | null, anchor: HTMLElement): void {
+    const placement = this.getPlacement(placementValue);
+
+    const anchorRect = anchor.getBoundingClientRect();
+    const popoverRect = this.dialog.getBoundingClientRect();
+
+    const viewportHeight = window.innerHeight;
+
+    const fitsTop =
+      anchorRect.top >= popoverRect.height;
+
+    const fitsBottom =
+      viewportHeight - anchorRect.bottom >= popoverRect.height;
+
+    if (placement === 'top') {
+      if (fitsTop) {
+        this.placeTop();
+      } else if (fitsBottom) {
+        this.placeBottom(anchorRect);
+      } else {
+        this.placeTop(16);
+      }
+    }
+  }
+
+  private placeTop(offsetX = 0) {
+    this.style.left = offsetX > 0 ? `${offsetX}px` : '0';
+    this.style.top = `${-this.dialog.offsetHeight}px`;
+  }
+
+  private placeBottom(rect: DOMRect) {
+    this.style.left = '0';
+    this.style.top = `${rect.height}px`;
+  }
+
+  private getPlacement(value: string | null): PopoverPlacement {
+    switch (value?.toLowerCase() ?? '') {
+      case 'top':
+        return 'top';
+      // case 'bottom':
+      //   return 'bottom';
+      default:
+        return 'top';
+    }
+  }
+
+
 }
 
 customElements.define('progress-status-popover', ProgressStatusPopover);
