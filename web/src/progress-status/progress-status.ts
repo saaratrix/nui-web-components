@@ -3,9 +3,10 @@ import './progress-status-popover.js';
 
 const defaultSpinnerSize = '2em';
 const defaultSpinnerDirection = 'spin-cw';
+const defaultColor = 'currentColor';
 
 export class ProgressStatus extends HTMLElement {
-  static observedAttributes = ['active', 'size', 'direction', 'placement'];
+  static observedAttributes = ['active', 'size', 'direction', 'placement', 'color'];
 
   shadow: ShadowRoot;
   progressPopover: ProgressStatusPopover;
@@ -44,11 +45,13 @@ export class ProgressStatus extends HTMLElement {
         .spinner {
           --spinner-direction: ${defaultSpinnerDirection};
           --spinner-size: ${defaultSpinnerSize};
+          --spinner-color-bg: rgba(0, 0, 0, 0.2);
+          --spinner-color: currentColor;
           display: inline-block;
           width: var(--spinner-size);
           height: var(--spinner-size);
           border: calc(0.18 * var(--spinner-size)) solid rgba(0, 0, 0, 0.2);
-          border-top-color: currentColor;
+          border-top-color: var(--spinner-color);
           border-radius: 50%;
         }
         
@@ -73,7 +76,7 @@ export class ProgressStatus extends HTMLElement {
         <span class="spinner"></span>
         <slot name="content"></slot>
       </div>
-      <progress-status-popover>
+      <progress-status-popover exportparts="dialog">
         <slot name="popover" slot="content"></slot>
       </progress-status-popover>
     `;
@@ -131,6 +134,8 @@ export class ProgressStatus extends HTMLElement {
       this.onSizeChanged(newValue);
     } else if (name === 'direction') {
       this.onDirectionChanged(newValue);
+    } else if (name === 'color') {
+      this.onColorChanged(newValue);
     }
   }
 
@@ -210,6 +215,13 @@ export class ProgressStatus extends HTMLElement {
   onDirectionChanged(value: unknown | null) {
     const direction = value === 'ccw' ? 'spin-ccw' : 'spin-cw';
     this.spinner.style.setProperty('--spinner-direction', direction);
+  }
+
+  onColorChanged(value: unknown | null) {
+    if (!value) {
+      value = defaultColor;
+    }
+    this.spinner.style.setProperty('--spinner-color', value as string);
   }
 }
 

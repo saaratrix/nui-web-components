@@ -1,7 +1,7 @@
 // Note: currently only supporting top.
 import { ProgressStatus } from './progress-status';
 
-export type PopoverPlacement = 'top';
+export type PopoverPlacement = 'above';
 
 export class ProgressStatusPopover extends HTMLElement {
   static observedAttributes = ['placement'];
@@ -25,7 +25,7 @@ export class ProgressStatusPopover extends HTMLElement {
         }
       </style>
 
-      <dialog>
+      <dialog part="dialog">
         <slot name="content"></slot>
       </dialog>
     `;
@@ -83,18 +83,18 @@ export class ProgressStatusPopover extends HTMLElement {
     const fitsBottom =
       viewportHeight - anchorRect.bottom >= popoverRect.height;
 
-    if (placement === 'top') {
+    if (placement === 'above') {
       if (fitsTop) {
-        this.placeTop();
+        this.placeAbove();
       } else if (fitsBottom) {
         this.placeBottom(anchorRect);
       } else {
-        this.placeTop(16);
+        this.placeAbove(16);
       }
     }
   }
 
-  private placeTop(offsetX = 0) {
+  private placeAbove(offsetX = 0) {
     this.style.left = offsetX > 0 ? `${offsetX}px` : '0';
     this.style.top = `${-this.dialog.offsetHeight}px`;
   }
@@ -106,12 +106,12 @@ export class ProgressStatusPopover extends HTMLElement {
 
   private getPlacement(value: string | null): PopoverPlacement {
     switch (value?.toLowerCase() ?? '') {
-      case 'top':
-        return 'top';
+      case 'above':
+        return 'above';
       // case 'bottom':
       //   return 'bottom';
       default:
-        return 'top';
+        return 'above';
     }
   }
 

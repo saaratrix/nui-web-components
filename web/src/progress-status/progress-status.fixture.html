@@ -3,18 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-
+    <style>
+        /* Example of overriding CSS passed in as a slot. */
+        .test {
+            background-color: pink;
+        }
+        /* Example of changing the CSS of the <dialog> inside the web component. */
+        progress-status::part(dialog) {
+            background-color: #badbad;
+        }
+    </style>
 </head>
 <body>
-
-    <progress-status active></progress-status>
+    <div>
+        <label>Active <input name="active" type="checkbox" checked></label>
+        <label>Size: <input name="size" value="2em"></label>
+        <div style="display: inline-block">
+            <span>Spin direction:</span>
+            <label>CW <input name="direction" type="radio" value="cw" checked></label>
+            <label>CCW: <input name="direction" type="radio" value="ccw"></label>
+        </div>
+        <label>Dialog placement:
+            <select name="placement">
+                <option value="above">Above</option>
+            </select>
+        </label>
+        <label>Color: <input name="color" type="color"></label>
+    </div>
+    <progress-status direction="cw">
+        <p class="test" slot="content">Loading ...</p>
+        <div slot="popover">
+            <p class="test">Detailed loading ...</p>
+        </div>
+    </progress-status>
     <script src="./progress-status.js" type="module"></script>
     <script>
         const element = document.querySelector("progress-status");
-        setInterval(() => {
-          const isActive = !!element.hasAttribute('active');
-          isActive ? element.removeAttribute('active') : element.setAttribute('active', '');
-        }, 2000);
+
+        const activeElement = document.querySelector('input[name="active"]');
+        if (activeElement.checked) {
+          element.setAttribute('active', '');
+        }
+        activeElement.addEventListener('change', function() {
+          if (this.checked) {
+            element.setAttribute('active', '');
+          } else {
+            element.removeAttribute('active');
+          }
+        });
+
+        document.querySelector('input[name="size"]').addEventListener('change', function() {
+          element.setAttribute('size', this.value);
+        });
+
+        const directionElements = document.querySelectorAll('input[name="direction"]');
+
+        for (const de of directionElements) {
+          if (de.checked) {
+            element.setAttribute('direction', de.value);
+          }
+          de.addEventListener('change', function() {
+            element.setAttribute('direction', this.value);
+          });
+        }
+
+
+        document.querySelector('select[name="placement"]').addEventListener('change', function() {
+          // Do nothing for now.
+        });
+
+        const colorElement = document.querySelector('input[name="color"]');
+        colorElement.addEventListener('input', function() {
+          element.setAttribute('color', this.value);
+        });
+
+        // Just some animation code if needed to test like content dynamically updating etc.
+        let lastFrame = Date.now();
+        let elapsed = 0;
+        let render = () => {
+          const now = Date.now();
+          elapsed += (now - lastFrame) / 1000;
+          lastFrame = now;
+
+
+          requestAnimationFrame(render);
+        }
+        render();
+
     </script>
 </body>
 </html>
