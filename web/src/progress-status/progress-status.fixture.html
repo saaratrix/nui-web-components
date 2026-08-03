@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Progress Status Component</title>
     <style>
         /* Example of overriding CSS passed in as a slot. */
         .test {
@@ -29,6 +29,7 @@
             </select>
         </label>
         <label>Color: <input name="color" type="color"></label>
+
     </div>
     <progress-status direction="cw">
         <p class="test" slot="content">Loading ...</p>
@@ -66,6 +67,8 @@
             element.setAttribute('direction', this.value);
           });
         }
+
+
 
 
         document.querySelector('select[name="placement"]').addEventListener('change', function() {

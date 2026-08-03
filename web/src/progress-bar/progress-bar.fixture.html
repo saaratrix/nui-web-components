@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Progress Bar Component</title>
+</head>
+
+<style>
+  progress-bar {
+    margin-top: 0.25rem;
+  }
+</style>
+
+<body>
+<div style="width: 80vw; max-width: 600px; margin: 0 auto; margin-top: 2rem;">
+  <div style="margin-bottom: 1rem;">
+    <div>
+
+      <label>Stripes : <input type="checkbox" name="stripes"></label>
+      <label>Animate stripes : <input type="checkbox" name="animate-stripes"></label>
+      <div style="display: inline-flex; align-items: center">
+        <label style="display: inline-flex">Height: <input type="range" name="height" value="12" min="4" max="40"></label>
+        <span class="height-value">12</span>
+      </div>
+
+      <br>
+      <label>
+        <input name="value" style="width: 80vw; max-width: 400px;" type="range" min="0" max="100" value="50" >
+      </label>
+      <span class="value-percent">50%</span>
+      <label>auto: <input type="checkbox" name="autoincrease"></label>
+    </div>
+  </div>
+  <h1 style="font-size: 1.25rem; margin: 0.25rem;">Progress bars</h1>
+  <div class="progress-bars" style="max-width: 400px;">
+    <progress-bar colors="#b325ff, #6d54ff, #3e8cff, #26d3d1"></progress-bar>
+
+    <!-- Solid -->
+<progress-bar colors="#4ade80"></progress-bar>
+
+<!-- Solid Blue -->
+<progress-bar colors="#3b82f6"></progress-bar>
+
+<!-- Gold -->
+<progress-bar colors="#fbbf24"></progress-bar>
+
+<!-- Danger -->
+<progress-bar colors="#ef4444"></progress-bar>
+
+<!-- Purple -->
+<progress-bar colors="#a855f7"></progress-bar>
+
+<!-- Blue -->
+<progress-bar colors="#3b82f6, #06b6d4"></progress-bar>
+
+<!-- Fire -->
+<progress-bar colors="#ff4d4d, #ffb347"></progress-bar>
+
+<!-- Pink -->
+<progress-bar colors="#ff4d94, #b5179e"></progress-bar>
+
+<!-- Mint -->
+<progress-bar colors="#34d399, #06b6d4"></progress-bar>
+
+<!-- Lime -->
+<progress-bar colors="#84cc16, #22c55e"></progress-bar>
+
+<!-- RGB -->
+<progress-bar colors="#ef4444, #f59e0b, #22c55e"></progress-bar>
+
+<!-- Candy -->
+<progress-bar colors="#ff5fa2, #c77dff, #7bdff2"></progress-bar>
+
+<!-- Tropical -->
+<progress-bar colors="#06d6a0, #ffd166, #ef476f"></progress-bar>
+
+<!-- Aurora -->
+<progress-bar colors="#8b5cf6, #3b82f6, #14b8a6"></progress-bar>
+
+<!-- Neon -->
+<progress-bar colors="#ff00ff, #00e5ff, #39ff14"></progress-bar>
+
+<!-- Rainbow -->
+<progress-bar colors="#ff3b30, #ff9500, #ffcc00, #34c759, #007aff"></progress-bar>
+
+<!-- Synthwave -->
+<progress-bar colors="#ff006e, #8338ec, #3a86ff, #06ffa5, #fbff12"></progress-bar>
+
+<!-- Galaxy -->
+<progress-bar colors="#240046, #5a189a, #7b2cbf, #9d4edd, #e0aaff"></progress-bar>
+
+<!-- Ocean -->
+<progress-bar colors="#001219, #005f73, #0a9396, #94d2bd, #e9d8a6"></progress-bar>
+
+<!-- Lava -->
+<progress-bar colors="#5f0f40, #9a031e, #fb8b24, #ffb703, #ffe066"></progress-bar>
+  </div>
+</div>
+
+
+  <script src="progress-bar.js" type="module"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      customElements.whenDefined('progress-bar').then(() => {
+        const slider = document.querySelector('input[name="value"]');
+        const sliderPercentage = document.querySelector('.value-percent');
+
+        const progressBars = document.querySelectorAll('progress-bar');
+
+        progressBars.forEach(p => p.value = slider.value);
+
+        slider.addEventListener('input', function() {
+          sliderPercentage.innerHTML = `${this.value}%`;
+
+          for (const bar of progressBars) {
+            bar.value = this.value;
+          }
+        });
+
+        let autoId = -1;
+        const autoIncrease = document.querySelector('input[name="autoincrease"]');
+        autoIncrease.addEventListener('change', function() {
+          clearInterval(autoId);
+          if (this.checked) {
+
+            let value = parseInt(slider.value);
+            autoId = setInterval(() => {
+              // 180 iterations for 1 full cycle, bit odd way of doing increment over 3 seconds.
+              const frames = 3 * 60;
+              const step = 100 / frames;
+
+              value += step;
+              if (value > 100) {
+                value = 0;
+              }
+              slider.value = Math.round(value);
+              sliderPercentage.innerHTML = `${slider.value}%`;
+              for (const bar of progressBars) {
+                bar.value = slider.value;
+              }
+            }, 1000/60);
+          }
+
+        });
+
+        const hasStripes = document.querySelector('input[name="stripes"]');
+        hasStripes.checked = progressBars[0].hasAttribute('stripes');
+        hasStripes.addEventListener('change', function() {
+          const stripes = this.checked;
+          progressBars.forEach((bar) => {
+            if (stripes) {
+              bar.setAttribute('stripes', '');
+            } else {
+              bar.removeAttribute('stripes');
+            }
+          })
+        });
+
+        const animationToggle = document.querySelector('input[name="animate-stripes"]');
+        animationToggle.checked = progressBars[0].hasAttribute('animate-stripes');
+        animationToggle.addEventListener('change', function() {
+          const animate = this.checked;
+          progressBars.forEach((bar, i) => {
+            if (animate) {
+              bar.setAttribute('animate-stripes', '');
+            } else {
+              bar.removeAttribute('animate-stripes');
+            }
+          })
+        });
+
+        const heightRange = document.querySelector('input[name="height"]');
+        const heightText = document.querySelector('.height-value');
+        heightRange.addEventListener('input', function() {
+          const value = this.value;
+          progressBars.forEach((bar, i) => {
+            bar.style.height = `${value}px`;
+          });
+          heightText.innerText = value;
+        });
+      });
+    });
+
+
+
+  </script>
+</body>
+</html>
