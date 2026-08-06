@@ -21,8 +21,8 @@
       <label>Stripes : <input type="checkbox" name="stripes"></label>
       <label>Animate stripes : <input type="checkbox" name="animate-stripes"></label>
       <div style="display: inline-flex; align-items: center">
-        <label style="display: inline-flex">Height: <input type="range" name="height" value="12" min="4" max="40"></label>
-        <span class="height-value">12</span>
+        <label style="display: inline-flex">Height: <input type="range" name="height" value="16" min="4" max="40"></label>
+        <span class="height-value">16</span>
       </div>
 
       <br>
@@ -35,8 +35,18 @@
   </div>
   <h1 style="font-size: 1.25rem; margin: 0.25rem;">Progress bars</h1>
   <div class="progress-bars" style="max-width: 400px;">
-    <progress-bar colors="#b325ff, #6d54ff, #3e8cff, #26d3d1"></progress-bar>
 
+    <div style="display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Loading ...</span>
+        <span id="current-value-test" style="--color: blue; color: var(--color); font-weight: 800; font-size: 1.5rem; text-shadow: 0 2px 18px color-mix(in srgb, var(--color), transparent 45%);">0%</span>
+      </div>
+      <progress-bar></progress-bar>
+    </div>
+
+    <br><br>
+
+  <progress-bar colors="#b325ff, #6d54ff, #3e8cff, #26d3d1"></progress-bar>
     <!-- Solid -->
 <progress-bar colors="#4ade80"></progress-bar>
 
@@ -111,13 +121,25 @@
 
         progressBars.forEach(p => p.value = slider.value);
 
+        const currentValueTest = document.getElementById('current-value-test');
+
         slider.addEventListener('input', function() {
           sliderPercentage.innerHTML = `${this.value}%`;
 
           for (const bar of progressBars) {
             bar.value = this.value;
           }
+
+          currentValueTest.innerText = `${(progressBars[0].progress * 100).toFixed(0)}%`;
+          currentValueTest.style.setProperty('color', progressBars[0].getCurrentColor());
         });
+
+        currentValueTest.innerText = `${(progressBars[0].progress * 100).toFixed(0)}%`;
+        currentValueTest.style.setProperty('color', progressBars[0].getCurrentColor());
+
+
+        // const colour = progressBars[0].getCurrentColor();
+        // console.log('colour', colour);
 
         let autoId = -1;
         const autoIncrease = document.querySelector('input[name="autoincrease"]');

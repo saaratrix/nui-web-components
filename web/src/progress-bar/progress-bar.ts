@@ -1,7 +1,18 @@
+const defaultStartColor = '#16A34A';
+const defaultMidColor = '#22C55E';
+const defaultEndColor = '#4ADE80';
+const defaultBarColor = `linear-gradient(90deg, ${defaultStartColor} 0%, ${defaultMidColor} 50%, ${defaultEndColor} 100%)`;
+
 export class ProgressBar extends HTMLElement {
   static observedAttributes = ['min', 'max', 'value', 'colors', 'stripes', 'animate-stripes', 'height'];
 
   private shadow: ShadowRoot;
+
+  #resizeObserver: ResizeObserver | undefined;
+  // Cached percentage so we don't need to read from attributes etc every time.
+  private currentPercentage: number = 0;
+  // The label element if the <slot> isn't overriden.
+  private _labelElement: HTMLElement | null |undefined;
 
   constructor() {
     super();
@@ -12,22 +23,16 @@ export class ProgressBar extends HTMLElement {
         :host {
           display: inline-block;
           /* It needs a height or the progress bar doesn't show, so this is default height and can be overridden normally with css. */
-          height: 12px;
+          height: 1rem;
           width: 100%;
-          --progress-bg-color: #1a2740;
+          --bar-bg-color: rgb(64 64 64 / 0.85);
           --show-stripes: ;
           --striped-velocity: 28px;
           /* Space-toggle technique, whichever on/off has initial is the active state */
           --animation-on: ;
-          --animation-off: initial;
-          
-          --bar-colors: linear-gradient(
-            90deg,
-            #b325ff 0%,
-            #6d54ff 35%,
-            #3e8cff 70%,
-            #26d3d1; 100%
-          );
+          --animation-off: initial;          
+          --label-color: white;          
+          --bar-colors: ${defaultBarColor};
         }
       
         .progress-container {
@@ -39,7 +44,20 @@ export class ProgressBar extends HTMLElement {
           overflow: hidden;
           /* border-radius needs to be in a pixel-ish unit, % would make it round odd and a high number gives it maximum round radius. */
           border-radius: 100vh;
-          background: var(--progress-bg-color);
+          background: var(--bar-bg-color);
+        }
+        
+        .progress-label {
+            position: absolute;
+            right: 0.5em;
+            display: inline-flex;
+            align-items: center;
+            height: 100%;
+            color: var(--label-color);
+            /* Height is programmatically set by a resizeObserver */
+            font-size: calc(var(--height) * 0.8);
+            text-shadow: 1px 1px 2px black;
+            user-select: none;
         }
       
         .progress-bar {
@@ -80,6 +98,7 @@ export class ProgressBar extends HTMLElement {
           }
         }
       </style>
+      
       <div
           class="progress-container"
           aria-valuemin="0"
@@ -88,15 +107,20 @@ export class ProgressBar extends HTMLElement {
           part="container"
         >
           <div part="bar" class="progress-bar"></div>
+          <div part="label" class="progress-label">
+            <slot>
+                <span class="label-value" part="label-value">0 %</span>
+            </slot>
+          </div>
         </div>
     `;
 
     this.setAttribute('role', 'progressbar');
   }
 
-  #progressBarElement: HTMLElement | null = null;
+  _progressBarElement: HTMLElement | null = null;
   public get progressBarElement(): HTMLElement {
-    return this.#progressBarElement ||= this.shadow.querySelector('.progress-container') as HTMLElement;
+    return this._progressBarElement ||= this.shadow.querySelector('.progress-container') as HTMLElement;
   }
 
   get min(): number {
@@ -156,6 +180,13 @@ export class ProgressBar extends HTMLElement {
     this.setAttribute('value', clamped.toString());
   }
 
+  /**
+   * Return progress between 0 -> 1
+   */
+  public get progress() {
+    return this.currentPercentage;
+  }
+
   public setIsAnimated(value?: boolean): void {
     value = value != null ? value : !this.hasAttribute('animate-stripes');
     if (value) {
@@ -165,14 +196,109 @@ export class ProgressBar extends HTMLElement {
     }
   }
 
+  private colorStepSize: number = 0;
+  private colorSteps: number[][] | undefined = undefined;
+
+  /**
+   * Get the current interpolated bar colour, can be useful for example if colouring text same as the bar.
+   * Returns colour in rgb() format.
+   */
+  public getCurrentColor(): string {
+    const [colorSteps, colorStepSize] = this.getColorSteps();
+
+    if (!colorSteps) {
+      const colorAttr = this.getAttribute('colors');
+      if (!colorAttr) {
+        return defaultStartColor;
+      }
+      return colorAttr.split(',')[0].trim();
+    }
+
+    if (colorSteps.length === 1) {
+      const [r, g, b, a] = colorSteps[0];
+      return `rgb(${r}, ${g}, ${b}, ${a})`;
+    }
+    const firstStepIndex = Math.floor(this.progress / colorStepSize);
+    const firstStep = colorSteps[firstStepIndex];
+    const secondStep = colorSteps[firstStepIndex + 1];
+    if (!secondStep) {
+      return `rgb(${firstStep[0]}, ${firstStep[1]}, ${firstStep[2]}, ${firstStep[3]})`;
+    }
+
+    const progress = (this.progress - (firstStepIndex * colorStepSize)) / colorStepSize;
+
+    const r = firstStep[0] + (secondStep[0] - firstStep[0]) * progress;
+    const g = firstStep[1] + (secondStep[1] - firstStep[1]) * progress;
+    const b = firstStep[2] + (secondStep[2] - firstStep[2]) * progress;
+    const a = firstStep[3] + (secondStep[3] - firstStep[3]) * progress;
+    return `rgb(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  private getColorSteps(): [steps: number[][] | undefined, stepSize: number] {
+    if (this.colorSteps) {
+      return [this.colorSteps, this.colorStepSize];
+    }
+
+    const colorAttr = this.getAttribute('colors');
+    const colors = colorAttr?.split(',').map((v) => v.trim()) ?? [defaultStartColor, defaultMidColor, defaultEndColor];
+    const stepSize = 1 / (colors.length - 1);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+
+    if (!context) {
+      return [undefined, 0];
+    }
+
+    // canvas.
+    // 2 = 1 which means 0 -> 1
+    // 3 = 2 which means 0 -> 0.5 -> 1.0
+    // 4 = 3 which means 0 -> 0.33 -> 0.67 -> 1.0
+    // And so on...
+    let steps = [];
+    for (const color of colors) {
+      // const hex = context.fillStyle;
+      // const r = parseInt(hex.slice(1, 3), 16);
+      // const g = parseInt(hex.slice(3, 5), 16);
+      // const b = parseInt(hex.slice(5, 7), 16);
+      // const a = parseInt(hex.slice(7, 9) || 'ff', 16) / 255;
+
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+
+      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+      steps.push([r, g, b, a / 255]);
+    }
+    return [steps, stepSize];
+  }
+
   connectedCallback(): void {
+    this._labelElement = this.shadow.querySelector('slot')?.querySelector('.label-value');
+    if ((this._labelElement?.part?.value ?? '') !== 'label-value') {
+      this._labelElement = null;
+    }
     this.updateAriaValues();
     this.updatePercentages();
+
+    this.#resizeObserver = new ResizeObserver(this.onResize);
+    this.#resizeObserver.observe(this);
+    const height = this.getBoundingClientRect().height;
+    this.style.setProperty("--height", `${height}px`);
   }
 
   disconnectedCallback(): void {
-
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = undefined;
+    this._labelElement = null;
   }
+
+  onResize = (entries: ResizeObserverEntry[], observer: ResizeObserver) => {
+    const height = entries[0].contentRect.height;
+    this.style.setProperty("--height", `${height}px`);
+  };
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
     if (oldValue === newValue) {
@@ -193,6 +319,8 @@ export class ProgressBar extends HTMLElement {
         break;
       case 'colors':
         updateState = false;
+        this.colorSteps = undefined;
+        this.colorStepSize = 0;
         this.onUpdateColors(newValue as string | null);
         break;
       case 'animate-stripes':
@@ -216,7 +344,7 @@ export class ProgressBar extends HTMLElement {
 
   private onUpdateColors(colorsRaw: string | null): void {
     if (colorsRaw == null) {
-      this.style.setProperty('--bar-colors', '#badbad');
+      this.style.setProperty('--bar-colors', defaultBarColor);
       return;
     }
 
@@ -244,14 +372,19 @@ export class ProgressBar extends HTMLElement {
     this.setAttribute('aria-valuenow', this.value.toString());
   }
 
+
   private updatePercentages(): void {
     const min = this.min;
     const max = this.max;
 
     const progress = min !== max ? (this.value - min) / (max - min) : 0;
-    const percentage = Math.min(Math.max(progress, 0), 1) * 100;
+    this.currentPercentage = Math.min(Math.max(progress, 0), 1);
+    const percentage = this.progress * 100;
 
     this.progressBarElement.style.setProperty('--progress', `${percentage}%`);
+    if (this._labelElement) {
+      this._labelElement.innerText = `${percentage.toFixed(0)}%`;
+    }
   }
 
 }
