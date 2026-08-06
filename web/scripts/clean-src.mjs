@@ -7,6 +7,7 @@ const srcRoot = join(scriptDir, "../src");
 
 const directories = [
   "progress-status",
+  "progress-bar",
   "media-viewer",
 ];
 

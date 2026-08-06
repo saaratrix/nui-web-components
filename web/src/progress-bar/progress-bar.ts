@@ -3,6 +3,8 @@ const defaultMidColor = '#22C55E';
 const defaultEndColor = '#4ADE80';
 const defaultBarColor = `linear-gradient(90deg, ${defaultStartColor} 0%, ${defaultMidColor} 50%, ${defaultEndColor} 100%)`;
 
+type RGBA = [r: number, g: number, b: number, a: number];
+
 export class ProgressBar extends HTMLElement {
   static observedAttributes = ['min', 'max', 'value', 'colors', 'stripes', 'animate-stripes', 'height'];
 
@@ -197,7 +199,7 @@ export class ProgressBar extends HTMLElement {
   }
 
   private colorStepSize: number = 0;
-  private colorSteps: number[][] | undefined = undefined;
+  private colorSteps: RGBA[] | undefined = undefined;
 
   /**
    * Get the current interpolated bar colour, can be useful for example if colouring text same as the bar.
@@ -211,30 +213,30 @@ export class ProgressBar extends HTMLElement {
       if (!colorAttr) {
         return defaultStartColor;
       }
-      return colorAttr.split(',')[0].trim();
+      return colorAttr.split(',')[0]!.trim();
     }
 
     if (colorSteps.length === 1) {
-      const [r, g, b, a] = colorSteps[0];
+      const [r, g, b, a] = colorSteps[0]!;
       return `rgb(${r}, ${g}, ${b}, ${a})`;
     }
     const firstStepIndex = Math.floor(this.progress / colorStepSize);
-    const firstStep = colorSteps[firstStepIndex];
+    const [r1, g1, b1, a1] = colorSteps[firstStepIndex]!;
     const secondStep = colorSteps[firstStepIndex + 1];
     if (!secondStep) {
-      return `rgb(${firstStep[0]}, ${firstStep[1]}, ${firstStep[2]}, ${firstStep[3]})`;
+      return `rgb(${r1}, ${g1}, ${b1}, ${a1})`;
     }
 
     const progress = (this.progress - (firstStepIndex * colorStepSize)) / colorStepSize;
 
-    const r = firstStep[0] + (secondStep[0] - firstStep[0]) * progress;
-    const g = firstStep[1] + (secondStep[1] - firstStep[1]) * progress;
-    const b = firstStep[2] + (secondStep[2] - firstStep[2]) * progress;
-    const a = firstStep[3] + (secondStep[3] - firstStep[3]) * progress;
+    const r = r1 + (secondStep[0] - r1) * progress;
+    const g = g1 + (secondStep[1] - g1) * progress;
+    const b = b1 + (secondStep[2] - b1) * progress;
+    const a = a1 + (secondStep[3] - a1) * progress;
     return `rgb(${r}, ${g}, ${b}, ${a})`;
   }
 
-  private getColorSteps(): [steps: number[][] | undefined, stepSize: number] {
+  private getColorSteps(): [steps: RGBA[] | undefined, stepSize: number] {
     if (this.colorSteps) {
       return [this.colorSteps, this.colorStepSize];
     }
@@ -257,7 +259,7 @@ export class ProgressBar extends HTMLElement {
     // 3 = 2 which means 0 -> 0.5 -> 1.0
     // 4 = 3 which means 0 -> 0.33 -> 0.67 -> 1.0
     // And so on...
-    let steps = [];
+    let steps: RGBA[] = [];
     for (const color of colors) {
       // const hex = context.fillStyle;
       // const r = parseInt(hex.slice(1, 3), 16);
@@ -269,7 +271,7 @@ export class ProgressBar extends HTMLElement {
       context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
 
-      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data as unknown as RGBA;
       steps.push([r, g, b, a / 255]);
     }
     return [steps, stepSize];
@@ -296,7 +298,7 @@ export class ProgressBar extends HTMLElement {
   }
 
   onResize = (entries: ResizeObserverEntry[], observer: ResizeObserver) => {
-    const height = entries[0].contentRect.height;
+    const height = entries[0]!.contentRect.height;
     this.style.setProperty("--height", `${height}px`);
   };
 
@@ -350,15 +352,15 @@ export class ProgressBar extends HTMLElement {
 
     const colors = colorsRaw.split(',');
     if (colors.length === 1) {
-      this.style.setProperty('--bar-colors', `${colors[0].trim()}`);
+      this.style.setProperty('--bar-colors', `${colors[0]!.trim()}`);
       return;
     }
 
-    let steps = [];
+    let steps: string[] = [];
     let stepCount = 100 / (colors.length - 1);
     for (let i = 0; i < colors.length; i++) {
       const stepPercent = Math.round((i * stepCount));
-      steps.push(`${colors[i].trim()} ${stepPercent}%`)
+      steps.push(`${colors[i]!.trim()} ${stepPercent}%`)
     }
 
     let barColors = `linear-gradient(90deg, ${steps.join(', ')})`

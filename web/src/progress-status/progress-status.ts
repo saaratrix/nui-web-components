@@ -6,7 +6,7 @@ const defaultSpinnerDirection = 'spin-cw';
 const defaultColor = 'currentColor';
 
 export class ProgressStatus extends HTMLElement {
-  static observedAttributes = ['active', 'size', 'direction', 'placement', 'color'];
+  static observedAttributes = ['active', 'size', 'direction', 'placement', 'color', 'paused'];
 
   shadow: ShadowRoot;
   progressPopover: ProgressStatusPopover;
@@ -30,23 +30,22 @@ export class ProgressStatus extends HTMLElement {
         }
         
         .container {
-            display: inline-flex;
             align-items: center;
-            gap: 0.25rem;;
-            visibility: hidden;
+            gap: 0.5rem;
+            display: none;
             user-select: none;
         }
         
         .active {
-            visibility: visible;
+            display: inline-flex;
         }
-        
         
         .spinner {
           --spinner-direction: ${defaultSpinnerDirection};
           --spinner-size: ${defaultSpinnerSize};
           --spinner-color-bg: rgba(0, 0, 0, 0.2);
           --spinner-color: currentColor;
+          box-sizing: border-box;
           display: inline-block;
           width: var(--spinner-size);
           height: var(--spinner-size);
@@ -57,7 +56,11 @@ export class ProgressStatus extends HTMLElement {
         
         .active .spinner {
             animation: var(--spinner-direction) 1.2s linear infinite;
-        }        
+        }   
+        
+        .active .paused {
+            animation: paused;
+        }         
         
         @keyframes spin-cw {
             to {
@@ -136,6 +139,8 @@ export class ProgressStatus extends HTMLElement {
       this.onDirectionChanged(newValue);
     } else if (name === 'color') {
       this.onColorChanged(newValue);
+    } else if (name === 'paused') {
+
     }
   }
 
@@ -222,6 +227,10 @@ export class ProgressStatus extends HTMLElement {
       value = defaultColor;
     }
     this.spinner.style.setProperty('--spinner-color', value as string);
+  }
+
+  onPausedChanged(value: unknown | null) {
+    value != null ? this.spinner.classList.add('paused') : this.spinner.classList.remove('paused');
   }
 }
 
