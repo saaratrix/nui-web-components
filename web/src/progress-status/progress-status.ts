@@ -140,7 +140,7 @@ export class ProgressStatus extends HTMLElement {
     } else if (name === 'color') {
       this.onColorChanged(newValue);
     } else if (name === 'paused') {
-
+      this.onPausedChanged(newValue);
     }
   }
 
