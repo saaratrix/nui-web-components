@@ -73,7 +73,10 @@ export class ProgressBar extends HTMLElement {
             ),);
         
           position: absolute;
-          inset: 0;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
           border-radius: inherit;
           /* Without this the bar would be 100% wide. */
           clip-path: inset(0 calc(100% - var(--progress)) 0 0);
