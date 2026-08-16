@@ -1,6 +1,9 @@
 import { MediaType, ControlsPlacement, viewingFailedToLoadEvent, viewingItemChangedEvent, defaultControlsPlacement, ControlsPlacements, controlsPlacementValues, MediaViewerItemChangedEvent, MediaViewerFailedToLoadEvent } from './media-viewer-models.js';
 import { MediaViewer } from './media-viewer.js';
 import './media-viewer-controls-rotate.js';
+import { MediaViewerHotkeyAction, MediaViewerHotkeysHandler } from './media-viewer-hotkeys-handler.js';
+import { MediaViewerActions } from './media-viewer-actions.js';
+import { isVideoElement } from './video-utils.js';
 
 type Feature = 'video:audio' | 'video:progress' | 'video:fullscreen' | 'rotate';
 
@@ -10,6 +13,29 @@ export class MediaViewerControls extends HTMLElement {
   shadow: ShadowRoot;
   featuresElement!: HTMLElement;
   activeFeatures: Set<Feature> = new Set();
+
+  actions = new MediaViewerActions(this);
+  hotkeysHandler = new MediaViewerHotkeysHandler();
+
+  videoHotkeyActions: MediaViewerHotkeyAction[] = [
+    {
+      id: 'video:seekForward',
+      key: 'ArrowRight',
+      action: (_: KeyboardEvent) => this.actions.seekForwards(),
+      preventDefault: true,
+    },
+    {
+      id: 'video:seekBackward',
+      key: 'ArrowLeft',
+      action: (_: KeyboardEvent) => this.actions.seekBackwards(),
+      preventDefault: true,
+    },
+    {
+      id: 'video:togglePlayback',
+      key: ' ',
+      action: (_: KeyboardEvent) => this.actions.togglePlayback(),
+    }
+  ];
 
   constructor() {
     super();
@@ -126,6 +152,7 @@ export class MediaViewerControls extends HTMLElement {
       this.activeFeatures.has('rotate') && `<media-viewer-controls-rotate ></media-viewer-controls-rotate>`,
     ];
 
+    // typeof string as has && can return undefined.
     const activeFeatures = allFeatures.filter<string>(f => typeof f === 'string');
     this.featuresElement.innerHTML = activeFeatures.join('\n');
   }
@@ -141,11 +168,16 @@ export class MediaViewerControls extends HTMLElement {
 
     this.setFeatures();
     this.updateView();
+    this.tryOverrideDefaultEvents();
+
+    this.hotkeysHandler.addEventListeners();
   }
 
   disconnectedCallback() {
     window.removeEventListener(viewingItemChangedEvent, this.onViewingItemChanged);
     window.removeEventListener(viewingFailedToLoadEvent, this.onViewingFailedToLoad);
+
+    this.hotkeysHandler.removeEventListeners();
   }
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
@@ -162,6 +194,7 @@ export class MediaViewerControls extends HTMLElement {
     }
 
     this.setFeatures();
+    this.tryOverrideDefaultEvents();
     this.updateView();
   };
 
@@ -177,10 +210,12 @@ export class MediaViewerControls extends HTMLElement {
 
   private setFeatures() {
     const features: Feature[] = [];
+    const actions: MediaViewerHotkeyAction[] = [];
     switch (this.mediaViewer.activeMediaType) {
       case MediaType.Video:
         features.push('video:audio', 'video:fullscreen', 'video:progress');
         features.push('rotate');
+        actions.push(...this.videoHotkeyActions);
         break;
       case MediaType.Image:
         features.push('rotate');
@@ -189,7 +224,35 @@ export class MediaViewerControls extends HTMLElement {
         break;
     }
 
+    this.hotkeysHandler.clearAndAddActions(actions);
     this.activeFeatures = new Set<Feature>(features);
+  }
+
+  private tryOverrideDefaultEvents(): void {
+    const contentElement = this.mediaViewer.getViewerContentElement();
+    if (!isVideoElement(contentElement)) {
+      return;
+    }
+    // Note: Clicking play, volume or fullscreen leaves the browser (chrome) in a focused state that ignores keydown events.
+    // Probably so you can press space to toggle play/pause or mute/unmute.
+    // So these methods are here to override such behaviour to allow for a smoother keyboard experience.
+
+    contentElement.addEventListener('play', function () {
+      this.blur();
+    });
+    contentElement.addEventListener('pause', function() {
+      this.blur();
+    });
+
+    contentElement.addEventListener('volumechange', function() {
+      this.blur();
+    })
+
+    document.addEventListener('fullscreenchange', () => {
+      contentElement.blur();
+    });
+
+
   }
 }
 

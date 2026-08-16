@@ -216,6 +216,19 @@ export class MediaViewer extends HTMLElement {
     return this._viewItemElement!;
   }
 
+  getViewerContentElement(): HTMLVideoElement | HTMLAudioElement | HTMLImageElement | null {
+    switch (this.activeMediaType) {
+      case MediaType.Video:
+        return this.viewItemElement.querySelector('video');
+      case MediaType.Audio:
+        return this.viewItemElement.querySelector('audio');
+      case MediaType.Image:
+        return this.viewItemElement.querySelector('img');
+    }
+
+    return null;
+  }
+
   private _subtitles: Subtitle[] | null = null;
   get subtitles(): Subtitle[] | null {
     if (this._subtitles) {
