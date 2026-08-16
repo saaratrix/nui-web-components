@@ -58,7 +58,7 @@ export class ProgressStatus extends HTMLElement {
             animation: var(--spinner-direction) 1.2s linear infinite;
         }   
         
-        .active .paused {
+        .active .spinner.paused {
             animation: paused;
         }         
         
