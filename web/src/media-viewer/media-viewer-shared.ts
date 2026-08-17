@@ -1,3 +1,4 @@
+// TODO: Change that these are using fixed external css variables.
 const sharedCSS = `
   .icon-action {
     padding: 5px;
@@ -54,4 +55,10 @@ export function applyMediaViewerSharedCSS(shadowRoot: ShadowRoot) {
     style.textContent = sharedCSS;
     shadowRoot.appendChild(style);
   }
+}
+
+export function isVideoElement(
+  element: Element | null | undefined,
+): element is HTMLVideoElement {
+  return element?.nodeName === 'VIDEO';
 }

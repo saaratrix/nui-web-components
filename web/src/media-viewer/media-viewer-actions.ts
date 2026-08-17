@@ -1,5 +1,5 @@
 import { MediaViewerControls } from './media-viewer-controls.js';
-import { isVideoElement } from './video-utils.js';
+import { isVideoElement } from './media-viewer-shared.js';
 
 export class MediaViewerActions {
   private controls: MediaViewerControls;

@@ -13,8 +13,8 @@ export const defaultControlsPlacement: ControlsPlacement = 'page:left';
 export const ControlsPlacements = {
   PageLeft: 'page:left',
   PageRight: 'page:right',
-  ItemLeft: 'item:up',
-  ItemRight: 'item:down',
+  ItemLeft: 'item:left',
+  ItemRight: 'item:right',
 } as const;
 export type ControlsPlacement = typeof ControlsPlacements[keyof typeof ControlsPlacements];
 export const controlsPlacementValues = new Set<ControlsPlacement>([ControlsPlacements.PageLeft, ControlsPlacements.PageRight, ControlsPlacements.ItemLeft, ControlsPlacements.ItemRight]);

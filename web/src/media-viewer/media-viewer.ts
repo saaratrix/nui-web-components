@@ -49,7 +49,6 @@ export class MediaViewer extends HTMLElement {
   activeMediaType: MediaTypes = MediaType.Unknown;
 
   _createdId: number;
-  private _showControls = false;
   private _controlsElement: MediaViewerControls | null = null;
 
   constructor() {
@@ -89,7 +88,7 @@ export class MediaViewer extends HTMLElement {
       <div class="container">
         <div class="item-container">
           <div class="item"></div>
-          <!-- Controls will be inserted here. -->
+          <media-viewer-controls></media-viewer-controls>
         </div>
       </div>
     `;
@@ -163,7 +162,7 @@ export class MediaViewer extends HTMLElement {
 
   set controlsPlacement(value: ControlsPlacement | null) {
     if (!value) {
-      this.hideControls();
+      this.hideControlsUI();
       return;
     }
 
@@ -172,31 +171,14 @@ export class MediaViewer extends HTMLElement {
       value = defaultControlsPlacement;
     }
     this.setAttribute("controls-placement", value);
-    this.showControls(value);
+    this.controlsElement.placement = value;
   }
 
-  private showControls(placement: ControlsPlacement) {
-    if (this._showControls) {
-      this.controlsElement!.placement = placement;
+  private hideControlsUI() {
+    if (!this.controlsElement.isUIVisible) {
       return;
     }
-    this._showControls = true;
-    let controlsElement = this.controlsElement;
-    if (!controlsElement) {
-      controlsElement = document.createElement('media-viewer-controls') as MediaViewerControls;
-    }
-
-    const containerItem = this.shadow.querySelector<HTMLElement>('.item-container');
-    containerItem?.appendChild(controlsElement);
-    controlsElement.placement = placement;
-  }
-
-  private hideControls() {
-    if (!this._showControls) {
-      return;
-    }
-    this._showControls = false;
-    this.controlsElement?.remove();
+    this.controlsElement.placement = null;
   }
 
   private _viewerContainerElement: HTMLElement | null = null;
@@ -272,9 +254,9 @@ export class MediaViewer extends HTMLElement {
     }
   }
 
-  get controlsElement(): MediaViewerControls | null {
+  get controlsElement(): MediaViewerControls {
     if (!this._controlsElement) {
-      this._controlsElement = this.shadow.querySelector('media-viewer-controls');
+      this._controlsElement = this.shadow.querySelector('media-viewer-controls') as MediaViewerControls;
     }
     return this._controlsElement;
   }
@@ -282,7 +264,7 @@ export class MediaViewer extends HTMLElement {
   connectedCallback() {
     const placement = this.controlsPlacement;
     if (placement) {
-      this.showControls(placement);
+      this.controlsElement.placement = placement;
     }
     this.renderViewItem(true);
   }

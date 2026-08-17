@@ -3,7 +3,7 @@ import { MediaViewer } from './media-viewer.js';
 import './media-viewer-controls-rotate.js';
 import { MediaViewerHotkeyAction, MediaViewerHotkeysHandler } from './media-viewer-hotkeys-handler.js';
 import { MediaViewerActions } from './media-viewer-actions.js';
-import { isVideoElement } from './video-utils.js';
+import { isVideoElement } from './media-viewer-shared.js';
 
 type Feature = 'video:audio' | 'video:progress' | 'video:fullscreen' | 'rotate';
 
@@ -72,6 +72,10 @@ export class MediaViewerControls extends HTMLElement {
           opacity: 0.7
         }
         
+        .hidden {
+            display: none;
+        }
+        
         .features {
           display: flex;
         }
@@ -89,11 +93,27 @@ export class MediaViewerControls extends HTMLElement {
     `;
   }
 
+  private _isUIVisible = false;
+  public get isUIVisible() {
+    return this._isUIVisible;
+  }
+
+  private set isUIVisible(value: boolean) {
+    this._isUIVisible = value;
+    this.viewerControls.classList.toggle('hidden', !this._isUIVisible);
+  }
+
   get placement(): ControlsPlacement {
     return this.getAttribute('placement') as ControlsPlacement;
   }
 
-  set placement(value: ControlsPlacement) {
+  set placement(value: ControlsPlacement | null) {
+    if (value == null) {
+      this.isUIVisible = false;
+      this.removeAttribute('placement');
+      return;
+    }
+
     value = value?.toLowerCase() as ControlsPlacement;
     if (!controlsPlacementValues.has(value)) {
       value = defaultControlsPlacement;
@@ -104,6 +124,7 @@ export class MediaViewerControls extends HTMLElement {
       return;
     }
 
+    this.isUIVisible = true;
     this.setAttribute('placement', value);
     const oldClass = this.getClassNameForPlacement(oldValue);
     const newClass = this.getClassNameForPlacement(value);
@@ -178,13 +199,6 @@ export class MediaViewerControls extends HTMLElement {
     window.removeEventListener(viewingFailedToLoadEvent, this.onViewingFailedToLoad);
 
     this.hotkeysHandler.removeEventListeners();
-  }
-
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
-    if (oldValue === newValue) {
-      return;
-    }
-
   }
 
   private onViewingItemChanged = (e: Event) => {
