@@ -54,6 +54,7 @@ export class SingleFilePicker extends HTMLElement {
             display: flex;
             width: 100%;
             max-width: 480px;
+            height: ${this.previewMaxSize}px;
         }
         
         .selection-icon {
@@ -106,6 +107,8 @@ export class SingleFilePicker extends HTMLElement {
         }
         
         .preview-item {
+            display: flex;
+            align-items: center;
             flex: 0 0 auto;
         }
         

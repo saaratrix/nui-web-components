@@ -21,7 +21,7 @@ export class FilePickerPreview extends HTMLElement {
     this.shadow.innerHTML = `
     <style>
         .container {
-            display: inline-flex;
+            display: flex;
             justify-content: center;
             width: ${this.maxSize}px;
         }
@@ -38,12 +38,6 @@ export class FilePickerPreview extends HTMLElement {
     `;
 
     this.container = this.shadow.querySelector('.container') as HTMLElement;
-  }
-
-  connectedCallback() {
-    this.parentElement?.addEventListener('change', () => {
-
-    });
   }
 
   disconnectedCallback() {
@@ -67,6 +61,7 @@ export class FilePickerPreview extends HTMLElement {
     while (this.container.firstChild) { this.container.removeChild(this.container.firstChild); }
     this.container.style.maxWidth = '';
     this.container.style.maxHeight = '';
+    this.container.style.width = '';
   }
 
   updateFromFile(file: File) {
@@ -162,10 +157,18 @@ export class FilePickerPreview extends HTMLElement {
     img.addEventListener('load', () => {
       // Change the size of preview element to better vertically center the image so there is less padding from upload button and image if the image is smaller than preview.
       const imageMax =  Math.max(img.naturalWidth, img.naturalHeight);
-      const containerWidth = container.offsetWidth || this.maxSize;
-      const max = Math.min(imageMax, containerWidth, this.maxSize);
+      const maxSize = this.maxSize;
+
+      const containerWidth = container.offsetWidth || maxSize;
+      const max = Math.min(imageMax, containerWidth, maxSize);
       container.style.maxWidth = `${max}px`;
       container.style.maxHeight = `${max}px`;
+
+      // Eg for a 1024x512 image we take 128 / 1024 and get 1 / 8
+      const sizeRatio = Math.min(max / imageMax, 1);
+      const width = img.naturalWidth * sizeRatio;
+
+      this.container.style.width = `${width}px`;
 
     }, { once: true });
 
