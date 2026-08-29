@@ -92,7 +92,6 @@ export class MediaViewerControlsRotate extends HTMLElement {
   };
 
   private onRotateLeft = () => {
-    console.log('rotate left!');
 
     this.rotation -= 90;
     // Need to blur or the :active state gets stuck.

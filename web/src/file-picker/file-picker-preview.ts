@@ -20,8 +20,18 @@ export class FilePickerPreview extends HTMLElement {
 
     this.shadow.innerHTML = `
     <style>
-        img {
+        .container {
+            display: inline-flex;
+            justify-content: center;
+            width: ${this.maxSize}px;
+        }
+        
+        img, video, audio {
             max-width: 100%;
+        }
+        
+        img, video {
+            max-height: ${this.maxSize}px;
         }
     </style>
     <div class="container"></div>
@@ -53,7 +63,10 @@ export class FilePickerPreview extends HTMLElement {
   clear() {
     URL.revokeObjectURL(this.previewObjectUrl);
     this.previewObjectUrl = '';
+
     while (this.container.firstChild) { this.container.removeChild(this.container.firstChild); }
+    this.container.style.maxWidth = '';
+    this.container.style.maxHeight = '';
   }
 
   updateFromFile(file: File) {
@@ -149,18 +162,29 @@ export class FilePickerPreview extends HTMLElement {
     img.addEventListener('load', () => {
       // Change the size of preview element to better vertically center the image so there is less padding from upload button and image if the image is smaller than preview.
       const imageMax =  Math.max(img.naturalWidth, img.naturalHeight);
-      const max = Math.min(imageMax, container.offsetWidth, this.maxSize);
+      const containerWidth = container.offsetWidth || this.maxSize;
+      const max = Math.min(imageMax, containerWidth, this.maxSize);
       container.style.maxWidth = `${max}px`;
       container.style.maxHeight = `${max}px`;
+
     }, { once: true });
 
-    img.src = this.previewObjectUrl;
     container.appendChild(img);
+    img.src = this.previewObjectUrl;
   }
 
   private previewVideo(file: File): void {
     const video = document.createElement('video');
     video.controls = true;
+
+    video.addEventListener('loadedmetadata', () => {
+      const imageMax =  Math.max(video.videoWidth, video.videoHeight);
+      const containerWidth = this.container.offsetWidth || this.maxSize;
+      const max = Math.min(imageMax, containerWidth, this.maxSize);
+      this.container.style.maxWidth = `${max}px`;
+      this.container.style.maxHeight = `${max}px`;
+    }, { once: true });
+
     const source = document.createElement('source');
     source.type = file.type;
     source.src = this.previewObjectUrl;

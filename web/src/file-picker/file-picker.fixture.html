@@ -9,10 +9,30 @@
 </head>
 
 <body>
-  <single-file-picker id="picker" accept="image/*,.pdf"></single-file-picker>
+  <div>
+    <label>Fullpage dnd: <input type="checkbox" id="dnd" checked></label>
+    -
+    <label>Fullpage paste: <input type="checkbox" id="paste"></label>
+  </div>
+  <br>
+  <single-file-picker id="picker" accept="image/*,.pdf" fullpage-dnd></single-file-picker>
 
   <script type="module" src="./single-file-picker.js"></script>
   <script type="application/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+      /** @type {SingleFilePicker} */
+      const picker = document.querySelector('single-file-picker');
+      const dnd = document.getElementById('dnd');
+      const paste = document.getElementById('paste');
+
+      dnd.addEventListener('change', function() {
+        this.checked ? picker.setAttribute('fullpage-dnd', '') : picker.removeAttribute('fullpage-dnd');
+      });
+
+      paste.addEventListener('change', function() {
+        this.checked ? picker.setAttribute('fullpage-paste', '') : picker.removeAttribute('fullpage-paste');
+      });
+    });
   </script>
 </body>
 </html>
