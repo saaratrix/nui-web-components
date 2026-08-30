@@ -15,6 +15,21 @@ SOURCE_PATH="$NUI_ROOT/src"
 
 mkdir -p "$(dirname "$TARGET_PATH")"
 
+if [ -e "$TARGET_PATH" ] || [ -L "$TARGET_PATH" ]; then
+  echo "Target already exists: $TARGET_PATH"
+  read -r -p "Do you want to overwrite it? [y/N] " CONFIRM
+
+  case "$CONFIRM" in
+    [yY])
+      rm -rf "$TARGET_PATH"
+      ;;
+    *)
+      echo "Cancelled."
+      exit 0
+      ;;
+  esac
+fi
+
 ln -s "$SOURCE_PATH" "$TARGET_PATH"
 
 echo "Symlinked:"
