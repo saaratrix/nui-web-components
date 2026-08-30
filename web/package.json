@@ -8,7 +8,9 @@
     "build:dev": "tsc -p tsconfig.dev.json",
     "watch:dev": "tsc -w -p tsconfig.dev.json",
     "clean-src": "node scripts/clean-src.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup:symlink:linux": "node scripts/setup-symlink-project.sh [target-project-path]",
+    "setup:target-builder": "node scripts/setup-target-builder.mjs [target-project-path]"
   },
   "repository": {
     "type": "git",

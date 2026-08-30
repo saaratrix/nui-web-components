@@ -1,0 +1,1 @@
+export const NUI_BUILDER_VERSION = '0.1';
