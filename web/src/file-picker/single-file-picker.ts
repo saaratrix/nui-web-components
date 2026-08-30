@@ -8,9 +8,11 @@ const defaultPreviewMaxSize = 128;
  * fullpage-dnd: Drag & drop a file anywhere and it'll go to this file picker.
  * fullpage-paste: paste almost anywhere and it'll be as pasting to this file picker.
  * expandable-preview: If you click on the preview item it expands it so it's larger.
+ * preview-max-size: the max size of the preview item, default is 128.
  *
  * Parts:
  * dnd-area: The drag and drop area, surprise!
+ * preview: The preview container
  */
 // A.k.a: The Great Chooser of Thingies
 export class SingleFilePicker extends HTMLElement {
@@ -25,7 +27,7 @@ export class SingleFilePicker extends HTMLElement {
   private previewContainer: HTMLElement;
   private filename: HTMLElement;
   private size: HTMLElement;
-  private pickerPreview: FilePickerPreview;
+  public pickerPreview: FilePickerPreview;
 
   private dndAreaElement: HTMLElement;
   private fullpageDragAndDrop: FullpageDragAndDrop | null = null
@@ -44,8 +46,10 @@ export class SingleFilePicker extends HTMLElement {
           );
           --remove-btn-color: crimson;
           --remove-btn-bg: none;
-          --remove-btn-bg-border: 1px solid #ffc0cb;
           --remove-btn-active-bg: #ffe7ec;
+          --remove-btn-hover-bg: #ffe7ec;
+          --remove-btn-hover-color: crimson;
+          --remove-btn-bg-border: 1px solid #ffc0cb;
           
           --drag-drop-area-bg: #62508f;         
         }
@@ -53,8 +57,7 @@ export class SingleFilePicker extends HTMLElement {
         .file-picker {
             display: flex;
             width: 100%;
-            max-width: 480px;
-            height: ${this.previewMaxSize}px;
+            box-sizing: border-box;
         }
         
         .selection-icon {
@@ -128,10 +131,15 @@ export class SingleFilePicker extends HTMLElement {
         .remove {
             color: var(--remove-btn-color);
             background: var(--remove-btn-bg);
-            padding: 0.25rem 0.5rem;
+            padding: 0.3rem 0.75rem;
             margin-top: 0.5rem;
             border-radius: 0.5rem;
             border: var(--remove-btn-bg-border);
+        }
+        
+        .remove:hover {
+            background: var(--remove-btn-hover-bg);
+            color: var(--remove-btn-hover-color);
         }
         
         .remove:active {
@@ -151,7 +159,7 @@ export class SingleFilePicker extends HTMLElement {
         
         ${defaultFullpageDnDCSS}
       </style>
-      <div class="file-picker" for="file-input">
+      <div class="file-picker" for="file-input" part="file-picker-container">
         <div class="selection-icon">
             <svg
                 width="20"
@@ -173,7 +181,7 @@ export class SingleFilePicker extends HTMLElement {
           <strong>Choose a file</strong>
           <small>or drag and drop it anywhere.</small>
         </label>
-        <div class="preview" hidden>
+        <div class="preview" hidden part="preview">
             <div class="preview-item">
                 <file-picker-preview max-size="${this.previewMaxSize}"></file-picker-preview>
             </div>
@@ -215,6 +223,7 @@ export class SingleFilePicker extends HTMLElement {
     this.dndAreaElement = this.shadow.querySelector('.drag-drop-area') as HTMLElement;
 
     this.fileInput.addEventListener('change', (e) => {
+      this.classList.toggle('has-selection', (this.files?.length ?? 0) > 0);
       this.onFileChanged(e);
       this.dispatchEvent(new CustomEvent('change', {
         detail: {
@@ -225,6 +234,38 @@ export class SingleFilePicker extends HTMLElement {
         composed: true,
       }));
     });
+
+
+    const filePickerContainer = this.shadow.querySelector('.file-picker') as HTMLElement;
+    let offsetLeft: number | null = null;
+    filePickerContainer.addEventListener('click', (e) => {
+      if (e.target !== filePickerContainer) {
+        return;
+      }
+
+      if (this.value) {
+        if (offsetLeft === null) {
+          const containerRects = filePickerContainer.getBoundingClientRect();
+          const selectionIconRects = this.shadow.querySelector('.selection-icon')!.getBoundingClientRect();
+          offsetLeft = selectionIconRects.left - containerRects.left;
+        }
+
+        if (e.offsetX > offsetLeft) {
+          return;
+        }
+      }
+
+      this.fileInput.click();
+    });
+
+  }
+
+  get value(): string {
+    return this.fileInput.value;
+  }
+
+  set value(value: string) {
+    this.fileInput.value = value;
   }
 
   get files(): FileList | null {
@@ -282,6 +323,10 @@ export class SingleFilePicker extends HTMLElement {
   clear() {
     this.fileInput.value = '';
     this.dispatchFilesChangedEvent(null);
+    this.clearTexts();
+  }
+
+  private clearTexts() {
     this.pickerPreview.clear();
     this.previewContainer.title = '';
   }
@@ -294,8 +339,7 @@ export class SingleFilePicker extends HTMLElement {
     this.previewContainer.hidden = !hasFile;
 
     if (!hasFile) {
-      this.previewContainer.title = '';
-      this.pickerPreview.clear();
+      this.clearTexts();
       return;
     }
     const file = this.files[0] as File;

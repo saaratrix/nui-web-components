@@ -6,6 +6,9 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const srcRoot = join(scriptDir, "../src");
 
 const directories = [
+  "debug",
+  "drag-and-drop",
+  "file-picker",
   "progress-status",
   "progress-bar",
   "media-viewer",
