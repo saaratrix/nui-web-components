@@ -30,7 +30,10 @@ if [ -e "$TARGET_PATH" ] || [ -L "$TARGET_PATH" ]; then
   esac
 fi
 
-ln -s "$SOURCE_PATH" "$TARGET_PATH"
+TARGET_DIR="$(cd "$(dirname "$TARGET_PATH")" && pwd)"
+RELATIVE_SOURCE_PATH="$(realpath --relative-to="$TARGET_DIR" "$SOURCE_PATH")"
+
+ln -s "$RELATIVE_SOURCE_PATH" "$TARGET_PATH"
 
 echo "Symlinked:"
-echo "  $TARGET_PATH -> $SOURCE_PATH"
+echo "  $TARGET_PATH -> $RELATIVE_SOURCE_PATH"
