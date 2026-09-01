@@ -1,3 +1,5 @@
+import { getFilePreviewSvg } from './get-file-preview-svg.js';
+
 export const PreviewType = {
   Unknown: 'unknown',
   Image: 'image',
@@ -84,6 +86,7 @@ export class FilePickerPreview extends HTMLElement {
         break;
       default:
         // If unknown just draw a square with file type.
+        this.previewUnknownIcon(file);
         break;
     }
   }
@@ -217,6 +220,13 @@ export class FilePickerPreview extends HTMLElement {
     }
 
     return PreviewType.Unknown;
+  }
+
+  private previewUnknownIcon(file: File) {
+    const extension = file.name.split('.').pop() || '';
+    const svg = getFilePreviewSvg(extension);
+
+    this.container.innerHTML = svg;
   }
 }
 
