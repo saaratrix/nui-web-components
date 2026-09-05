@@ -1,11 +1,18 @@
 export function getFilePreviewSvg(extension: string) {
 
+  const fontSize = '1em';
+  // More than 7 characters the svg shape starts breaking.
+  if (extension.length > 7) {
+    extension = extension.substring(0, 7);
+  }
+
   return `
     <svg
       viewBox="0 0 96 96"
       width="96"
       height="96"
       aria-label="${extension} file preview"
+      part="preview-item"
     >
       <defs>
         <linearGradient id="preview-bg" x1="0" y1="0" x2="1" y2="1">
@@ -54,12 +61,12 @@ export function getFilePreviewSvg(extension: string) {
         y="77"
         text-anchor="middle"
         font-family="system-ui, sans-serif"
-        font-size="16"
+        font-size="${fontSize}"
         font-weight="700"
         fill="var(--preview-unknown-text, white)"
       >
         ${extension}
-      </text>
+      </text>     
     </svg>
   `;
 }

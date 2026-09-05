@@ -7,6 +7,7 @@ export const PreviewType = {
   Audio: 'audio',
 } as const;
 
+const previewItemPart = 'preview-item';
 // Because we're dealing with File type we need to extract a thumbnail etc out of it.
 export class FilePickerPreview extends HTMLElement {
   previewObjectUrl: string = '';
@@ -56,6 +57,31 @@ export class FilePickerPreview extends HTMLElement {
     return size;
   }
 
+  get previewContainer(): HTMLElement {
+    return this.container;
+  }
+
+  get previewItem(): HTMLImageElement | HTMLVideoElement | HTMLAudioElement | HTMLOrSVGElement | null {
+    const item = this.container.firstElementChild;
+    if (!item) {
+      return null;
+    }
+
+    const node = item.nodeName;
+    switch (node) {
+      case 'AUDIO':
+        return item as HTMLAudioElement;
+      case 'IMG':
+        return item as HTMLImageElement;
+      case 'SVG':
+        return item as SVGElement;
+      case 'VIDEO':
+        return item as HTMLVideoElement;
+    }
+
+    return null;
+  }
+
   clear() {
     URL.revokeObjectURL(this.previewObjectUrl);
     this.previewObjectUrl = '';
@@ -91,22 +117,23 @@ export class FilePickerPreview extends HTMLElement {
     }
   }
 
-  public async getThumbnailAsBase64(): Promise<string> {
+  public async getThumbnailAsBase64(size?: number): Promise<string> {
     const container = this.container;
     const image = container.querySelector('img');
+    size ??= this.maxSize;
     if (image) {
-      return this.getThumbnailAsBase64FromImage(image);
+      return this.getThumbnailAsBase64FromImage(image, size);
     }
     const video = container.querySelector('video');
     if (video) {
-      return this.getThumbnailAsBase64FromVideo(video);
+      return this.getThumbnailAsBase64FromVideo(video, size);
     }
 
     return '';
   }
 
-  private getThumbnailAsBase64FromImage(image: HTMLImageElement) {
-    let  thumbnailSize = Math.min(this.maxSize, Math.max(image.naturalWidth, image.naturalHeight));
+  private getThumbnailAsBase64FromImage(image: HTMLImageElement, size: number) {
+    let thumbnailSize = Math.min(size, Math.max(image.naturalWidth, image.naturalHeight));
 
     const widthRatio = thumbnailSize / image.width;
     const heightRatio = thumbnailSize / image.height;
@@ -130,13 +157,13 @@ export class FilePickerPreview extends HTMLElement {
    * @param video
    * @private
    */
-  private getThumbnailAsBase64FromVideo(video: HTMLVideoElement): Promise<string> {
+  private getThumbnailAsBase64FromVideo(video: HTMLVideoElement, size: number): Promise<string> {
     const currentTime = video.currentTime;
     video.currentTime = 0;
 
     return new Promise<string>(res => {
       video.addEventListener('seeked', () => {
-        const thumbnailSize = Math.min(this.maxSize, Math.max(video.videoWidth, video.videoHeight));
+        const thumbnailSize = Math.min(size, Math.max(video.videoWidth, video.videoHeight));
         const canvas = document.createElement('canvas');
         const scale = Math.min(thumbnailSize / video.videoWidth, thumbnailSize / video.videoHeight);
 
@@ -155,6 +182,7 @@ export class FilePickerPreview extends HTMLElement {
 
   private previewImage(_: File): void {
     const img = document.createElement('img');
+    img.part =  previewItemPart;
     const container = this.container;
 
     img.addEventListener('load', () => {
@@ -182,6 +210,7 @@ export class FilePickerPreview extends HTMLElement {
   private previewVideo(file: File): void {
     const video = document.createElement('video');
     video.controls = true;
+    video.part = previewItemPart;
 
     video.addEventListener('loadedmetadata', () => {
       const imageMax =  Math.max(video.videoWidth, video.videoHeight);
@@ -201,6 +230,7 @@ export class FilePickerPreview extends HTMLElement {
   private previewAudio(file: File): void {
     const audio = document.createElement('audio');
     audio.controls = true;
+    audio.part = previewItemPart;
     audio.innerHTML = `<source src="${this.previewObjectUrl}" type="${file.type}">`
 
     this.container.appendChild(audio);

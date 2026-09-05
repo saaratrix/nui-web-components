@@ -183,7 +183,7 @@ export class SingleFilePicker extends HTMLElement {
         </label>
         <div class="preview" hidden part="preview">
             <div class="preview-item">
-                <file-picker-preview max-size="${this.previewMaxSize}"></file-picker-preview>
+                <file-picker-preview max-size="${this.previewMaxSize}" exportparts="preview-item"></file-picker-preview>
             </div>
             <div class="preview-body">
                 <div>
