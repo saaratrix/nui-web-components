@@ -71,7 +71,7 @@ export class MediaViewer extends HTMLElement {
         .item {
           display: inline-block;
           padding: 0.5rem;
-          transition: transform 100ms ease-in-out;
+          transition: transform 0.1s ease-in-out;
         }
 
         .item img,
