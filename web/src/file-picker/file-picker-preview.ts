@@ -27,6 +27,7 @@ export class FilePickerPreview extends HTMLElement {
             display: flex;
             justify-content: center;
             width: ${this.maxSize}px;
+            max-width: 100%;
         }
         
         img, video, audio {
@@ -35,6 +36,11 @@ export class FilePickerPreview extends HTMLElement {
         
         img, video {
             max-height: ${this.maxSize}px;
+        }
+        
+        video {
+            /* Anything smaller and the video isn't really interactible. */
+            min-height: 64px;
         }
     </style>
     <div class="container"></div>
@@ -87,7 +93,6 @@ export class FilePickerPreview extends HTMLElement {
     this.previewObjectUrl = '';
 
     while (this.container.firstChild) { this.container.removeChild(this.container.firstChild); }
-    this.container.style.maxWidth = '';
     this.container.style.maxHeight = '';
     this.container.style.width = '';
   }
@@ -192,15 +197,7 @@ export class FilePickerPreview extends HTMLElement {
 
       const containerWidth = container.offsetWidth || maxSize;
       const max = Math.min(imageMax, containerWidth, maxSize);
-      container.style.maxWidth = `${max}px`;
       container.style.maxHeight = `${max}px`;
-
-      // Eg for a 1024x512 image we take 128 / 1024 and get 1 / 8
-      const sizeRatio = Math.min(max / imageMax, 1);
-      const width = img.naturalWidth * sizeRatio;
-
-      this.container.style.width = `${width}px`;
-
     }, { once: true });
 
     container.appendChild(img);
@@ -216,7 +213,6 @@ export class FilePickerPreview extends HTMLElement {
       const imageMax =  Math.max(video.videoWidth, video.videoHeight);
       const containerWidth = this.container.offsetWidth || this.maxSize;
       const max = Math.min(imageMax, containerWidth, this.maxSize);
-      this.container.style.maxWidth = `${max}px`;
       this.container.style.maxHeight = `${max}px`;
     }, { once: true });
 

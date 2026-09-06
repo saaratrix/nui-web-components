@@ -91,7 +91,7 @@ export class SingleFilePicker extends HTMLElement {
         .preview {
             gap: 0.5rem;
             /* For not flexbox overflowing */
-            min-width: 0;
+            min-width: 32px;
         }
         
         .file-name {
@@ -112,7 +112,14 @@ export class SingleFilePicker extends HTMLElement {
         .preview-item {
             display: flex;
             align-items: center;
-            flex: 0 0 auto;
+            flex-shrink: 1;
+            min-width: 32px;
+            /* For small views it will otherwise oversize. */
+            max-width: 100%;
+        }
+        
+        file-picker-preview {
+            max-width: 100%;
         }
         
         .preview-body {
@@ -121,7 +128,7 @@ export class SingleFilePicker extends HTMLElement {
             gap: 0.25rem;
             justify-content: space-between;
             flex: 1 1 auto;
-            min-width: 0;
+            min-width: 6ch;
         }
         
         .info {
