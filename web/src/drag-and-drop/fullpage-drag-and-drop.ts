@@ -3,12 +3,6 @@ export interface FullpageDragAndDropEvents {
 }
 
 export const defaultFullpageDnDCSS = `
-:host-context(body.drag) {
-  .drag-drop-area {
-    opacity: 1;
-    pointer-events: all;
-  }
-}
 .drag-drop-area {
   position: fixed;
   width: 100%;
@@ -16,8 +10,8 @@ export const defaultFullpageDnDCSS = `
   top: 0;
   left: 0;
   z-index: 9999;
-  opacity: 0;
-  pointer-events: none;
+  opacity: var(--dnd-on, 1) var(--dnd-off, 0);
+  pointer-events: var(--dnd-on, all) var(--dnd-off, none);
   transition: opacity 0.15s ease-in;
   background-color: var(--drag-drop-area-bg);
   display: flex;
@@ -68,6 +62,8 @@ export class FullpageDragAndDrop {
 
     window.addEventListener('dragover', this.handleWindowDragOver);
     window.addEventListener('drop', this.handleWindowDrop);
+
+    this.removeDndState();
   }
 
   removeEventListeners(): void {
@@ -82,29 +78,31 @@ export class FullpageDragAndDrop {
 
     window.removeEventListener('dragover', this.handleWindowDragOver);
     window.removeEventListener('drop', this.handleWindowDrop);
+
+    this.removeDndState();
   }
 
   private handleDocumentDragOver = (event: DragEvent): void => {
-    document.body.classList.add(this.bodyDragClass);
+    this.addDndState();
     event.preventDefault();
   };
 
   private handleClick = (): void => {
-    document.body.classList.remove(this.bodyDragClass);
+    this.removeDndState();
   };
 
   private handleKeyUp = (event: KeyboardEvent): void => {
     if (event.key === "Escape") {
-      document.body.classList.remove(this.bodyDragClass);
+      this.removeDndState();
     }
   }
 
   private handleDragLeave = (): void => {
-    document.body.classList.remove(this.bodyDragClass);
+    this.removeDndState();
   };
 
   private handleDrop = (event: DragEvent): void => {
-    document.body.classList.remove(this.bodyDragClass);
+    this.removeDndState();
     event.preventDefault();
 
     this.onDrop(event);
@@ -117,4 +115,17 @@ export class FullpageDragAndDrop {
   private handleWindowDrop = (event: DragEvent): void => {
     event.preventDefault();
   };
+
+  private addDndState(): void {
+    document.body.style.setProperty('--dnd-on', 'initial');
+    document.body.style.setProperty('--dnd-off', ' ');
+    document.body.classList.add(this.bodyDragClass);
+  }
+
+  private removeDndState(): void {
+    document.body.classList.remove(this.bodyDragClass);
+    document.body.style.setProperty('--dnd-on', ' ');
+    document.body.style.setProperty('--dnd-off', 'initial');
+
+  }
 }
