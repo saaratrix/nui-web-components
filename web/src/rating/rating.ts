@@ -1,4 +1,4 @@
-export class NuiRating extends HTMLElement {
+export class Rating extends HTMLElement {
   static observedAttributes = ['value'];
 
   shadow: ShadowRoot;
@@ -78,4 +78,4 @@ export class NuiRating extends HTMLElement {
   }
 }
 
-customElements.define('nui-rating', NuiRating);
+customElements.define('nui-rating', Rating);
