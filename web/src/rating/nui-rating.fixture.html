@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>nui-rating</title>
+    <style>nui-rating { font-size: 2em; }</style>
+</head>
+<body>
+    <h2>With value</h2>
+
+    <nui-rating value="1">10</nui-rating>
+    <nui-rating value="0.81">8.1</nui-rating>
+    <nui-rating value="0.5">5.0</nui-rating>
+    <nui-rating value="0.25">2.5</nui-rating>
+    <nui-rating value="0">0</nui-rating>
+
+    <h2>Star only</h2>
+
+    <nui-rating value="1"></nui-rating>
+    <nui-rating value="0.81"></nui-rating>
+    <nui-rating value="0.5"></nui-rating>
+    <nui-rating value="0.25"></nui-rating>
+    <nui-rating value="0"></nui-rating>
+
+    <h2>Slot HTML content</h2>
+
+    <nui-rating value="8.1"><strong>8.1</strong></nui-rating>
+    <nui-rating value="7.4">7.4 / 10</nui-rating>
+    <nui-rating value="9.2">Excellent</nui-rating>
+
+    <h2>Edge cases</h2>
+
+    <nui-rating value="-1">-1</nui-rating>
+    <nui-rating value="11">11</nui-rating>
+    <nui-rating value="foo">Invalid</nui-rating>
+    <nui-rating>No value</nui-rating>
+
+    <script src="./nui-rating.js" type="module"></script>
+</body>
+</html>
