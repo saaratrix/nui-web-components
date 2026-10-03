@@ -35,6 +35,12 @@
     <nui-rating class="editable" value="0"></nui-rating>
     <nui-rating class="editable auto"></nui-rating>
 
+    <h2>Star directions</h2>
+    <nui-rating class="editable auto" value="0.33" fill-from="left"></nui-rating>
+    <nui-rating class="editable auto" value="0.33" fill-from="right"></nui-rating>
+    <nui-rating class="editable auto" value="0.33" fill-from="bottom"></nui-rating>
+    <nui-rating class="editable auto" value="0.33" fill-from="top"></nui-rating>
+
     <h2>Slot HTML content</h2>
 
     <nui-rating class="editable "value="8.1"><strong>8.1</strong></nui-rating>
@@ -82,7 +88,9 @@
         autoValue = Math.round(((autoValue + increment) % 1) * 100) / 100;
 
         autoRatings.forEach(a => {
-          a.textContent = autoValue;
+          if (a.textContent.length > 0) {
+            a.textContent = autoValue;
+          }
           a.setAttribute('value', autoValue);
         });
     }, 1000 / 30);
