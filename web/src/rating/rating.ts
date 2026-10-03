@@ -21,7 +21,6 @@ export class Rating extends HTMLElement {
         :host {
           display: inline-flex;
           align-items: center;
-          gap: 0.25em;
         }
 
         svg {
