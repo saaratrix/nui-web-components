@@ -3,38 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <title>nui-rating</title>
-    <style>nui-rating { font-size: 2em; }</style>
+    <style>
+        nui-rating {
+            font-size: 2em;
+        }.
+    </style>
 </head>
 <body>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="color">color: <input id="color" type="color"></label>
+        <label for="bg-color">--bg-color: <input id="bg-color" type="color"></label>
+        <label for="bg-opacity">--bg-opacity: <input id="bg-opacity" type="number"></label>
+    </div>
+
     <h2>With value</h2>
 
     <nui-rating value="1">10</nui-rating>
-    <nui-rating value="0.81">8.1</nui-rating>
-    <nui-rating value="0.5">5.0</nui-rating>
-    <nui-rating value="0.25">2.5</nui-rating>
-    <nui-rating value="0">0</nui-rating>
+    <nui-rating value="0.81" style="color: red;">8.1</nui-rating>
+    <nui-rating value="0.5" style="color: orange;">5.0</nui-rating>
+    <nui-rating value="0.25" style="--fill: #badbad; color: mediumvioletred">2.5</nui-rating>
+    <nui-rating value="0" style="color: mediumpurple">0</nui-rating>
+    <nui-rating class="editable auto"></nui-rating>
+
 
     <h2>Star only</h2>
 
-    <nui-rating value="1"></nui-rating>
-    <nui-rating value="0.81"></nui-rating>
-    <nui-rating value="0.5"></nui-rating>
-    <nui-rating value="0.25"></nui-rating>
-    <nui-rating value="0"></nui-rating>
+    <nui-rating class="editable" value="1"></nui-rating>
+    <nui-rating class="editable" value="0.81"></nui-rating>
+    <nui-rating class="editable" value="0.5" style="--bg-color: teal;"></nui-rating>
+    <nui-rating class="editable" value="0.25" style="--bg-color: teal; --bg-opacity: 1;"></nui-rating>
+    <nui-rating class="editable" value="0"></nui-rating>
+    <nui-rating class="editable auto"></nui-rating>
 
     <h2>Slot HTML content</h2>
 
-    <nui-rating value="8.1"><strong>8.1</strong></nui-rating>
-    <nui-rating value="7.4">7.4 / 10</nui-rating>
-    <nui-rating value="9.2">Excellent</nui-rating>
+    <nui-rating class="editable "value="8.1"><strong>8.1</strong></nui-rating>
+    <nui-rating class="editable "value="7.4">7.4 / 10</nui-rating>
+    <nui-rating class="editable "value="9.2">Excellent</nui-rating>
 
     <h2>Edge cases</h2>
 
-    <nui-rating value="-1">-1</nui-rating>
-    <nui-rating value="11">11</nui-rating>
-    <nui-rating value="foo">Invalid</nui-rating>
-    <nui-rating>No value</nui-rating>
+    <nui-rating class="editable" value="-1">-1</nui-rating>
+    <nui-rating class="editable" value="11">11</nui-rating>
+    <nui-rating class="editable" value="nuu">nuu</nui-rating>
+    <nui-rating class="editable">No value</nui-rating>
 
-    <script src="./nui-rating.js" type="module"></script>
+<script type="module">
+    /** @type HTMLInputElement */
+    const color = document.querySelector("#color");
+    /** @type HTMLInputElement */
+    const bgColor = document.querySelector("#bg-color");
+    /** @type HTMLInputElement */
+    const bgOpacity = document.querySelector("#bg-opacity");
+
+    /** @type NodeListOf<HTMLElement> */
+    const editables = document.querySelectorAll('.editable');
+    /** @type NodeListOf<HTMLElement> */
+    const autoRatings = document.querySelectorAll(".auto");
+
+
+    color.addEventListener("input", () => {
+        const value = color.value;
+        editables.forEach(e => e.style.color = value);
+    });
+    bgColor.addEventListener("input", () => {
+        const value = bgColor.value;
+        editables.forEach(e => e.style.setProperty('--bg-color', value));
+    });
+    bgOpacity.addEventListener("input", () => {
+        const value = bgOpacity.value;
+        editables.forEach(e => e.style.setProperty('--bg-opacity', value));
+    });
+
+    let autoValue = 0;
+    // takes 3 seconds for star to fully fill.
+    let increment = 0.33 / 30;
+    setInterval(() => {
+        autoValue = Math.round(((autoValue + increment) % 1) * 100) / 100;
+
+        autoRatings.forEach(a => {
+          a.textContent = autoValue;
+          a.setAttribute('value', autoValue);
+        });
+    }, 1000 / 30);
+
+</script>
+<script src="rating.js" type="module"></script>
 </body>
 </html>

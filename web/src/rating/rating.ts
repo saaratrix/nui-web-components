@@ -1,3 +1,9 @@
+/**
+ * By default is styled with just color: yellow;  and opacity on the background to fade the color.
+ * --fill: yellow; should only be used if you need different text colour to be the color property but also recommended just to style the <slot> then.
+ * --bg-color: orange;  to directly colour the background colour as otherwise it uses the color property
+ * --bg-opacity: 1; may be needed to so --bg-color gets the exact colour.
+ */
 export class Rating extends HTMLElement {
   static observedAttributes = ['value'];
 
@@ -26,6 +32,7 @@ export class Rating extends HTMLElement {
 
         .background {
           fill: var(--bg-color, currentColor);
+          opacity: var(--bg-opacity, 0.25);
         }
 
         .fill {
