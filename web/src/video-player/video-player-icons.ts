@@ -1,0 +1,7 @@
+export const fullscreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9V3h6v2.5H5.5V9ZM15 3h6v6h-2.5V5.5H15ZM3 15h2.5v3.5H9V21H3ZM18.5 15H21v6h-6v-2.5h3.5Z"/></svg>`;
+
+export const exitfullscreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3v6H3V6.5h3.5V3ZM15 3h2.5v3.5H21V9h-6ZM3 15h6v6H6.5v-3.5H3ZM15 15h6v2.5h-3.5V21H15Z"/></svg>`;
+
+export const subtitleIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M3 4H21Q23 4 23 6V18Q23 20 21 20H3Q1 20 1 18V6Q1 4 3 4ZM3 6V18H21V6Z" /><path d="M8.3 9.7Q7.2 8.9 6.3 9.6Q5.8 10.1 6.6 10.5L8 11.2Q10.3 12.5 9.2 14.4Q8.1 16.2 5.7 15.6Q4.5 15.3 3.9 14.5L5 13.5Q6.3 14.9 7.5 14.2Q8.2 13.6 7.3 13.1L5.9 12.4Q3.6 11.3 4.7 9.4Q6 7.3 8.9 8.6Z M10.1 10.4H11.8V13.5Q11.8 14.4 12.6 14.3Q13.4 14.2 13.4 13.3V10.4H15.1V15.7H13.5V15.1Q12.9 15.9 11.8 15.8Q10.1 15.7 10.1 13.8Z M16 8H17.7V11Q18.3 10.3 19.2 10.3Q21.2 10.3 21.2 13Q21.2 15.8 19.2 15.8Q18.2 15.8 17.7 15V15.7H16ZM18.6 11.7Q17.7 11.7 17.7 13Q17.7 14.4 18.6 14.4Q19.5 14.4 19.5 13Q19.5 11.7 18.6 11.7Z" transform="translate(1.71 2.36) scale(0.82)" /></svg>`;
+
+export const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5a1 1 0 0 1 1.52-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5z"/></svg>`;

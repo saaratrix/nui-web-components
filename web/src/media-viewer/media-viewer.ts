@@ -1,4 +1,5 @@
-import { dispatchViewingFailedToLoadEvent, MediaType, MediaTypes, ControlsPlacement, controlsPlacementValues, defaultControlsPlacement, dispatchViewingItemChangedEvent, Subtitle } from './media-viewer-models.js';
+import { ControlsPlacement, controlsPlacementValues, defaultControlsPlacement, dispatchViewingFailedToLoadEvent, dispatchViewingItemChangedEvent, MediaType, MediaTypes } from './media-viewer-models.js';
+import { type Subtitle, SubtitleType } from '../video-player/video-player.models.js';
 import type { MediaViewerControls } from './media-viewer-controls.js';
 import './media-viewer-controls.js';
 
@@ -236,6 +237,7 @@ export class MediaViewer extends HTMLElement {
       result.push({
         src: src.trim(),
         label: label.trim(),
+        type: SubtitleType.Vtt,
         srclang: srclang.trim(),
       });
     }

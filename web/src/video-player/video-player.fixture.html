@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fixture Name</title>
+  <style>
+  </style>
+</head>
+
+<body>
+  <div>
+    <label>A setting: <input type="checkbox" id="dnd" checked></label>
+    <button id="add-remove-test">Try add & remove video element</button>
+  </div>
+  <br>
+  <video-player id="component" subtitles="/nui-web-components/web/src/video-player/test/test.ass|en|eng" >
+    <source slot="sources" src="./test/test.mp4" type="video/mp4" />
+  </video-player>
+
+  <script type="module" src="./video-player.js"></script>
+  <script type="module">
+    import { subtitlesOptions } from './video-player-subtitles.js';
+
+    subtitlesOptions.octopusRootUrl = './subtitles-octopus/';
+    subtitlesOptions.octopusDefaultFontUrl = '/nui-web-components/web/src/video-player/subtitles-octopus/liberation-sans.woff2';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      /** @type {VideoPlayer} */
+      const component = document.getElementById('component');
+
+      if (component.subtitlesElement.subtitles.length > 0) {
+        void component.subtitlesElement.changeSubtitle(component.subtitlesElement.subtitles[0]);
+      }
+
+      const addRemoveTestButton = document.getElementById('add-remove-test');
+      addRemoveTestButton.addEventListener('click', () => {
+        const parentElement = component.parentElement;
+        const beforeElement = component.previousElementSibling;
+        parentElement.removeChild(component);
+        setTimeout(() => {
+          parentElement.insertBefore(component, beforeElement.nextSibling);
+        }, 250);
+
+      });
+    });
+  </script>
+</body>
+</html>
