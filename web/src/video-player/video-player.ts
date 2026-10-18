@@ -2,13 +2,14 @@ import type { VideoPlayerSubtitles } from './video-player-subtitles';
 
 import './video-player-subtitles.js';
 import { exitfullscreenIcon, fullscreenIcon } from './video-player-icons.js';
+import { controlsIconCSS } from './video-player-shared.js';
 
 /**
  * Properties:
  * subtitles: CSV with | as delimiter for each {@link Subtitle} src,label,srclang
  */
 export class VideoPlayer extends HTMLElement {
-  observedAttributes = ['subtitles', 'poster'];
+  static observedAttributes = ['subtitles', 'poster'];
 
   shadow: ShadowRoot;
 
@@ -71,33 +72,13 @@ export class VideoPlayer extends HTMLElement {
             top: 0;
             padding: 0.25rem 0.5rem;
             opacity: var(--controls-opacity);
-        }        
+        }     
         
-        .icon {
-            display: inline-block;
-            border-radius: 50%;
-            box-sizing: border-box;
-            width: var(--icon-size);
-            height: var(--icon-size);
-            padding: calc((var(--icon-size) - var(--icon-size-svg)) * 0.5);
-            color: var(--color-icon, white);
-            cursor: pointer;
-        }
+        .controls-group {
+            display: flex;
+        }   
         
-        .icon svg {
-            width: var(--icon-size-svg);
-            height: var(--icon-size-svg);
-            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
-        }
-        
-        .icon:hover {
-            color: var(--color-icon-hover, #eee);
-            background-color: rgba(0, 0, 0, 0.08);
-        }
-        
-        .icon:active {
-            color: var(--color-icon-active, #ddd);
-        }
+        ${controlsIconCSS}
       </style>
       <div class="video-player" tabindex="0">
         <div class="video-container">
@@ -183,8 +164,9 @@ export class VideoPlayer extends HTMLElement {
 
       this._subtitlesElement = document.createElement('video-player-subtitles') as VideoPlayerSubtitles;
       this._subtitlesElement.videoPlayer = this;
+      this._subtitlesElement.classList.add('action');
       const controlsGroup = this.videoControls.querySelector('.controls-group') as HTMLElement;
-      controlsGroup.appendChild(this._subtitlesElement);
+      controlsGroup.insertBefore(this._subtitlesElement, this.fullscreenButton);
     }
 
     return this._subtitlesElement;

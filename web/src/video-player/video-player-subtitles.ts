@@ -1,6 +1,8 @@
 import type { VideoPlayer } from './video-player';
 import { Subtitle, SubtitleType } from './video-player.models.js';
 import type { SubtitlesOctopus, SubtitleOctopusOptions } from './subtitles-octopus/subtitles-octopus';
+import { subtitleIcon } from './video-player-icons.js';
+import { controlsIconCSS } from './video-player-shared.js';
 
 interface SubtitlesOptions {
   // url to root where all the files are eg: './subtitles-octopus/'
@@ -19,7 +21,7 @@ export const subtitlesOptions: SubtitlesOptions = {
 export class VideoPlayerSubtitles extends HTMLElement {
   public static csvDelimiter = '|';
 
-  observedAttributes = [];
+  static observedAttributes = [];
 
   shadow: ShadowRoot;
 
@@ -46,8 +48,10 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
     this.shadow.innerHTML = `
       <style>
+        ${controlsIconCSS}
       </style>
       <div class="video-player-subtitles">
+        <i class="icon icon-subtitles">${subtitleIcon}</i>
       </div>
       <div class="popover"></div>
     `;

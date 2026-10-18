@@ -1,11 +1,10 @@
 export class WebComponentTemplate extends HTMLElement {
-  observedAttributes = [];
+  static observedAttributes = [];
 
   shadow: ShadowRoot;
 
   constructor() {
     super();
-
     this.shadow = this.attachShadow({ mode: 'open' });
 
     this.shadow.innerHTML = `
