@@ -6,8 +6,17 @@ interface AddedEvent {
   method: (event: Event) => void;
 }
 
+enum PopoverTrigger {
+  Click,
+  Hover
+}
+
+export interface PortalHTMLElement extends HTMLElement {
+  __contentReference?: unknown;
+}
+
 export class Popover extends HTMLElement {
-  static observedAttributes = ['pin', 'disabled', 'hide-arrow'];
+  static observedAttributes = ['pin', 'disabled', 'hide-arrow', 'trigger'];
 
   shadow: ShadowRoot;
   private popoverContainer: HTMLElement;
@@ -16,8 +25,13 @@ export class Popover extends HTMLElement {
   private events: AddedEvent[] = [];
 
   private isVisible = false;
+  public storedParentElement: Node | null = null;
   private currentAnchor: HTMLElement | null = null;
   private isPinned: boolean = false;
+
+  private portalRoot: PortalHTMLElement | null = null;
+  private portalShadow: ShadowRoot | null = null;
+  private portalStyle: HTMLStyleElement | null = null;
 
   constructor() {
     super();
@@ -35,7 +49,7 @@ export class Popover extends HTMLElement {
         }
         
         [hidden] {
-            display: none !important;;
+            display: none !important;
         }
 
         .popover {
@@ -54,7 +68,7 @@ export class Popover extends HTMLElement {
         }
         
         .content-container {
-            overflow: auto;
+            overflow-y: auto;
             height: 100%;
             padding: 0 var(--padding, 1rem);
             box-sizing: border-box;
@@ -62,7 +76,6 @@ export class Popover extends HTMLElement {
         }
         
         .content {
-            position: relative;
             max-height: inherit;
             box-sizing: border-box;
         }
@@ -95,10 +108,19 @@ export class Popover extends HTMLElement {
   }
 
   connectedCallback() {
+    // Do this only once otherwise it would change when moving element to body.
+    if (!this.storedParentElement) {
+      // if parent is a shadow fragment it's parentNode
+      this.storedParentElement = this.parentElement || this.parentNode;
+    }
   }
 
   disconnectedCallback() {
-    this.removeEvents();
+    setTimeout(() => {
+      if (!this.isConnected) {
+        this.removeEvents();
+      }
+    });
   }
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
@@ -126,20 +148,50 @@ export class Popover extends HTMLElement {
   }
 
   public get canPin(): boolean {
-    return this.hasAttribute('pin');
+    return this.hasAttribute('pin') || this.trigger === PopoverTrigger.Click;
   }
 
   public get showArrow(): boolean {
     return !this.hasAttribute('hide-arrow');
   }
 
-  setAnchor(anchor: HTMLElement) {
+  public get trigger(): PopoverTrigger {
+    const trigger = this.getAttribute('trigger') ?? '';
+    switch (trigger.toLowerCase()) {
+      case 'click':
+        return PopoverTrigger.Click;
+      default:
+        return PopoverTrigger.Hover;
+    }
+  }
+
+  public set trigger(value: string | null) {
+    if (!value) {
+      this.removeAttribute('trigger');
+      return;
+    }
+
+    let trigger =  'hover';
+    switch (value.toLowerCase()) {
+      case 'click':
+        trigger = 'click';
+        break;
+    }
+
+    this.setAttribute('trigger', trigger);
+  }
+
+  setAnchor(anchor: HTMLElement | null) {
     if (anchor === this.currentAnchor) {
       return;
     }
 
     this.removeEvents();
     this.currentAnchor = anchor;
+
+    if (!anchor) {
+      return;
+    }
 
     if (this.canPin) {
       this.addEvent(anchor, 'click', () => this.onAnchorClick());
@@ -188,6 +240,8 @@ export class Popover extends HTMLElement {
     this.isVisible = true;
     this.popoverContainer.hidden = false;
 
+    this.addSelfToPortalRoot();
+
     positionPopover(this.popoverContainer, anchor, {
       arrow: this.showArrow ? this.arrow : null,
     });
@@ -200,6 +254,7 @@ export class Popover extends HTMLElement {
 
     this.isVisible = false;
     this.removeEvent(document, 'click');
+    this.addSelfBackToParent();
     this.popoverContainer.hidden = true;
   }
 
@@ -210,12 +265,19 @@ export class Popover extends HTMLElement {
 
     this.isPinned = !this.isPinned;
     if (this.isPinned) {
-      this.addEvent(document, 'click', (event) => this.onOutsideClick(event));
+      setTimeout(() => {
+        this.addEvent(document, 'click', (event) => this.onOutsideClick(event as PointerEvent));
+      });
+    }
+
+    if (!this.isHoverAllowed()) {
+      this.isVisible ? this.hide() : this.show();
     }
   }
 
-  private onOutsideClick = (event: Event) => {
-    if (event.target && (this.contains(event.target as HTMLElement) || this.currentAnchor?.contains(event.target as HTMLElement))) {
+  private onOutsideClick = (event: PointerEvent) => {
+    const composedPath = event.composedPath();
+    if (composedPath.indexOf(this.popoverContainer) !== -1) {
       return;
     }
 
@@ -228,7 +290,7 @@ export class Popover extends HTMLElement {
   }
 
   private onAnchorPointerEnter() {
-    if (this.isDisabled) {
+    if (this.isDisabled || !this.isHoverAllowed()) {
       return;
     }
 
@@ -242,6 +304,84 @@ export class Popover extends HTMLElement {
 
     this.hide();
   }
+
+  private isHoverAllowed(): boolean {
+    switch (this.trigger) {
+      case PopoverTrigger.Hover:
+        return true;
+    }
+
+    return false;
+  }
+
+  private addSelfToPortalRoot() {
+    if (!this.portalRoot) {
+      let portalRoot = document.getElementById('nui-portal-root') as PortalHTMLElement | null;
+      if (!portalRoot) {
+        portalRoot = document.createElement('div');
+        portalRoot.id = 'nui-portal-root';
+        document.body.appendChild(portalRoot);
+        portalRoot.attachShadow({ mode: 'open' });
+        const portalStyle = document.createElement('style');
+        portalRoot.shadowRoot!.appendChild(portalStyle);
+        this.portalStyle = portalStyle;
+      }
+      else {
+        this.portalStyle = portalRoot.querySelector('style');
+      }
+      this.portalRoot = portalRoot;
+      this.portalShadow = portalRoot.shadowRoot as ShadowRoot;
+    }
+
+    if (this.portalRoot.__contentReference !== this) {
+      const rootNode = this.getRootNode();
+      this.portalStyle!.textContent = '';
+
+      if (rootNode instanceof ShadowRoot) {
+        let popoverStyle: CSSStyleSheet | undefined;
+        for (let i = 0; i < rootNode.styleSheets.length; i++) {
+          const style = rootNode.styleSheets.item(i);
+          if (!style?.ownerNode || !('id' in style.ownerNode) || style.ownerNode.id !== 'popover') {
+            continue;
+          }
+
+          popoverStyle = style;
+          break;
+        }
+
+        if (popoverStyle) {
+          let css = '';
+          const rules = popoverStyle.cssRules;
+          for (let i = 0; i < rules.length; i++) {
+            const rule = rules.item(i);
+            if (rule) {
+              css += rule.cssText;
+            }
+          }
+
+          this.portalStyle!.textContent = css;
+        }
+
+        this.portalRoot.__contentReference = this;
+      }
+    }
+
+    const documentElement = document.fullscreenElement || document.body;
+    if (this.portalRoot.parentElement !== documentElement) {
+      if (documentElement.shadowRoot) {
+        documentElement.shadowRoot.appendChild(this.portalRoot);
+      } else {
+        documentElement.appendChild(this.portalRoot);
+      }
+    }
+
+    this.portalShadow!.appendChild(this);
+  }
+
+  private addSelfBackToParent() {
+    this.storedParentElement?.appendChild(this);
+  }
+
 }
 
 customElements.define('nui-popover', Popover);
