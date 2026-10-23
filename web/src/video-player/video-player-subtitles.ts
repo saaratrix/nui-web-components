@@ -1,8 +1,10 @@
 import type { VideoPlayer } from './video-player';
 import { Subtitle, SubtitleType } from './video-player.models.js';
-import type { SubtitlesOctopus, SubtitleOctopusOptions } from './subtitles-octopus/subtitles-octopus';
+import { SubtitlesOctopus, SubtitleOctopusOptions, SubtitleStyle } from './subtitles-octopus/subtitles-octopus';
 import { subtitleIcon } from './video-player-icons.js';
 import { controlsIconCSS } from './video-player-shared.js';
+import type { Popover } from '../popover/popover.js';
+import '../popover/popover.js';
 
 interface SubtitlesOptions {
   // url to root where all the files are eg: './subtitles-octopus/'
@@ -18,6 +20,8 @@ export const subtitlesOptions: SubtitlesOptions = {
   octopusDefaultFontUrl: undefined,
 };
 
+const marginLocalhostKey = 'meow-margin';
+
 export class VideoPlayerSubtitles extends HTMLElement {
   public static csvDelimiter = '|';
 
@@ -26,20 +30,25 @@ export class VideoPlayerSubtitles extends HTMLElement {
   shadow: ShadowRoot;
 
   private hasOctopusScript = false;
-  public selectedSubtitle: Subtitle | undefined;
+  private _selectedSubtitle: Subtitle | undefined;
   public subtitles: Subtitle[] = [];
+
+  public configPopover: Popover;
 
   public parsedSubtitles: Subtitle[] = [];
   public addedSubtitles: Subtitle[] = [];
+
+  private languageRadioElements: Map<Subtitle | undefined, HTMLInputElement> = new Map();
+
+  private marginToggleButton!: HTMLButtonElement;
 
   public currentOctopus: SubtitlesOctopus | undefined;
 
   // This is set by the parent when creating the element.
   public videoPlayer!: VideoPlayer;
 
-  // Vertical offset for the subtitle
-  private marginVertical: number | undefined;
-  private timeOffset: number | undefined;
+  private defaultStyles: SubtitleStyle[] = [];
+  private static MarginVerticalOffset = 100;
 
   constructor() {
     super();
@@ -50,27 +59,141 @@ export class VideoPlayerSubtitles extends HTMLElement {
       <style>
         ${controlsIconCSS}
       </style>
+      <style id="popover">
+        .config-popover {
+            max-width: min(80vw, 200px);
+        }
+      
+        .subtitles-config {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        h3 {
+            margin: 0;
+        }
+        
+        hr {
+            width: 100%;
+        }
+        
+        .margin-button {
+            height: 2.5rem;
+            font-size: 1.25em;
+        }
+        .margin-button[data-active] {
+            background-color: #badbad;            
+        }
+        
+        .group {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .languages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .languages label {
+            display: flex;
+            cursor: pointer;
+        }
+        
+        .languages label:hover {
+            opacity: 0.95;
+        }
+        
+        .languages input[type="radio"] {
+            display: none;
+        }
+        
+        .checkmark {
+            visibility: hidden;
+        }
+        
+        .checkmark:has(+ input[name="language"]:checked) {
+            visibility: visible;
+        }
+      </style>
       <div class="video-player-subtitles">
         <i class="icon icon-subtitles">${subtitleIcon}</i>
       </div>
-      <div class="popover"></div>
+      <nui-popover class="config-popover" trigger="click">
+        <div class="subtitles-config" slot="content">
+            <div class="header">
+                <h3>Subtitles</h3>
+                <hr>
+            </div>
+            <div class="group">
+                <button class="margin-button">Meow!</button>
+            </div>
+            <hr>
+            <fieldset class="languages-container">
+              <legend>Languages</legend>
+              <div class="languages"></div>
+            </fieldset>            
+        </div>
+      </nui-popover>
     `;
+
+    this.configPopover = this.shadow.querySelector('nui-popover') as Popover;
+    this.configPopover.setAnchor(this.shadow.querySelector('.video-player-subtitles') as HTMLElement);
+
+    this.initMarginButton();
+
+    this.addEventListener('subtitleChanged', (event) => {
+      for (const [subtitle, element] of this.languageRadioElements.entries()) {
+        element.checked = (event as CustomEvent<Subtitle | undefined>).detail == subtitle;
+      }
+    });
+  }
+
+  private initMarginButton() {
+    const isInitiallyActive = this.isMarginOffsetActive();
+    // Meow button, to adjust if cat is in front of the telly.
+    this.marginToggleButton = this.shadow.querySelector('.margin-button') as HTMLButtonElement;
+    if (isInitiallyActive) {
+      this.marginToggleButton.dataset['active'] = 'true';
+    }
+
+    this.marginToggleButton.addEventListener('click', () => {
+      if (!this.defaultStyles) {
+        return;
+      }
+
+      const isCurrentlyActive = this.isMarginOffsetActive();
+      if (isCurrentlyActive) {
+        delete this.marginToggleButton.dataset['active'];
+        void this.adjustMargin(-VideoPlayerSubtitles.MarginVerticalOffset);
+      } else {
+        this.marginToggleButton.dataset['active'] = 'true';
+        void this.adjustMargin(VideoPlayerSubtitles.MarginVerticalOffset);
+      }
+
+      try {
+        // Since we flipped currently active, set the opposite to local storage.
+        localStorage.setItem(marginLocalhostKey, isCurrentlyActive ? '0' : 'true');
+      } catch { }
+    });
   }
 
   connectedCallback() {
-    console.log('parent is video player?', this.parentElement);
     if (window.__nuiOctopus) {
       if (this.selectedSubtitle) {
         void this.changeSubtitle(this.selectedSubtitle);
       } else {
-        void this.trySetSubtitlesOctopusInstance();
+        const isPlaying = !this.videoPlayer.video.paused;
+        void this.trySetSubtitlesOctopusInstance(isPlaying);
       }
-
     }
+
+    this.renderSubtitlesList();
   }
 
   disconnectedCallback() {
-    console.log('element removed');
     this.currentOctopus?.freeTrack();
     if (this.currentOctopus?.video === this.videoElement) {
       document.addEventListener("fullscreenchange", this.currentOctopus.resizeWithTimeout, false);
@@ -96,7 +219,20 @@ export class VideoPlayerSubtitles extends HTMLElement {
       return;
     }
   }
-  
+
+  public get selectedSubtitle(): Subtitle | undefined {
+    return this._selectedSubtitle;
+  }
+  public set selectedSubtitle(value: Subtitle | undefined) {
+    if (this._selectedSubtitle === value) {
+      return;
+    }
+    this._selectedSubtitle = value;
+    this.dispatchEvent(new CustomEvent('subtitleChanged', {
+      detail: value
+    }));
+  }
+
   get videoElement(): HTMLVideoElement {
     return this.videoPlayer.video;
   }
@@ -135,6 +271,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
     this.subtitles = [...this.parsedSubtitles, ...this.addedSubtitles];
 
     this.updateSelectedSubtitleReference();
+    this.renderSubtitlesList();
   }
 
   private updateSelectedSubtitleReference(): void {
@@ -154,6 +291,48 @@ export class VideoPlayerSubtitles extends HTMLElement {
     }
   }
 
+  renderSubtitlesList(): void {
+    if (!this.isConnected) {
+      return;
+    }
+
+    const languagesElement = this.shadow.querySelector('.subtitles-config .languages') as HTMLElement;
+    this.languageRadioElements.clear();
+    const fragment = document.createDocumentFragment();
+    for (let i = -1; i < this.subtitles.length; i++) {
+      fragment.appendChild(this.renderSubtitleListItem(i, this.subtitles[i]));
+    }
+
+    // replaceChildren is chrome 86+
+    //languagesElement.replaceChildren(fragment);
+    languagesElement.innerHTML = '';
+    languagesElement.appendChild(fragment);
+  }
+
+  private renderSubtitleListItem(index: number, subtitle: Subtitle | undefined): HTMLElement {
+    const label = document.createElement('label');
+
+    const text = subtitle?.label ?? 'Off';
+
+    const checked = this.selectedSubtitle == subtitle;
+
+    label.innerHTML = `
+      <span class="checkmark">✓</span>
+      ${text}
+      <input name="language" type="radio" value="${index}">`;
+
+    const radioButton = label.querySelector('input[type="radio"]') as HTMLInputElement;
+    radioButton.checked = checked;
+    radioButton.addEventListener('change', () => {
+      if (radioButton.checked) {
+        void this.changeSubtitle(subtitle);
+      }
+    });
+
+    this.languageRadioElements.set(subtitle, radioButton);
+    return label;
+  }
+
   public async changeSubtitle(subtitle: Subtitle | undefined): Promise<void> {
     if (!subtitle) {
       this.clearSelectedSubtitle();
@@ -166,8 +345,10 @@ export class VideoPlayerSubtitles extends HTMLElement {
       return;
     }
 
+    const isPlaying = !this.videoPlayer.video.paused;
+
     this.selectedSubtitle = subtitle;
-    const loaded = await this.trySetSubtitlesOctopusInstance();
+    const loaded = await this.trySetSubtitlesOctopusInstance(isPlaying);
     if (!loaded || !this.currentOctopus) {
       this.clearSelectedSubtitle();
       return;
@@ -178,11 +359,64 @@ export class VideoPlayerSubtitles extends HTMLElement {
     } else if (subtitle.content) {
       this.currentOctopus.setTrack(subtitle.content);
     }
+
+    this.fetchDefaultStyle(() => {
+      if (this.isMarginOffsetActive() && this.defaultStyles.length > 0) {
+        void this.adjustMargin(VideoPlayerSubtitles.MarginVerticalOffset);
+      }
+    });
+  }
+
+  private fetchDefaultStyle(onFetched?: () => void): void {
+    if (!this.currentOctopus) {
+      return;
+    }
+
+    this.currentOctopus.getStyles((styles) => {
+      console.log('octopus: All styles', styles);
+
+      const defaultStyles: SubtitleStyle[] = [];
+      for (const style of styles) {
+        if (style.Name === 'Default') {
+          defaultStyles.push(style);
+        }
+      }
+
+      this.defaultStyles = defaultStyles;
+      onFetched?.();
+    }, () => this.defaultStyles = []);
   }
 
   private clearSelectedSubtitle(): void {
     this.selectedSubtitle = undefined;
     this.currentOctopus?.freeTrack();
+    this.defaultStyles = [];
+  }
+
+  public isMarginOffsetActive(): boolean {
+    if (this.marginToggleButton) {
+      return 'active' in this.marginToggleButton.dataset;
+    }
+
+    try {
+      return localStorage.getItem(marginLocalhostKey) === 'true';
+    } catch { }
+
+    return false;
+  }
+
+  public async adjustMargin(offset: number): Promise<void> {
+    if (!this.currentOctopus) {
+      return;
+    }
+
+    for (const style of this.defaultStyles) {
+      const margin = style.MarginV + offset;
+      style.MarginV = margin;
+
+      this.currentOctopus.setStyle({ MarginV: margin, Alignment: 2 }, style._index);
+
+    }
   }
 
   private clearOctopusResizeObserver(): void {
@@ -194,29 +428,40 @@ export class VideoPlayerSubtitles extends HTMLElement {
     delete this.currentOctopus.ro;
   }
 
-  async trySetSubtitlesOctopusInstance(): Promise<boolean> {
+  async trySetSubtitlesOctopusInstance(isPlaying: boolean): Promise<boolean> {
+    if (this.currentOctopus) {
+      this.trySetOctopusVideo();
+      return true;
+    }
+
     if (subtitlesOptions.octopusRootUrl === undefined || subtitlesOptions.octopusDefaultFontUrl === undefined) {
       console.error(`Need to set octopusRootUrl or octopusDefaultFontUrl on 'subtitlesOptions'`, subtitlesOptions);
       return false;
     }
 
+    console.log('started loading octopus');
+    const start = performance.now();
+    this.videoPlayer.video.pause();
     await this.tryLoadOctopusScript();
-    if (!window.SubtitlesOctopus || this.currentOctopus) {
+    if (!window.SubtitlesOctopus) {
       return false;
     }
 
     if (window.__nuiOctopus) {
       this.currentOctopus = window.__nuiOctopus;
-      if (this.currentOctopus.video !== this.videoElement) {
-        this.clearOctopusResizeObserver();
-        this.currentOctopus.setVideo(this.videoElement);
-      }
+      this.trySetOctopusVideo();
     } else {
       const options: SubtitleOctopusOptions = {
         video: this.videoElement,
         workerUrl: subtitlesOptions.octopusRootUrl + 'subtitles-octopus-worker.js',
         legacyWorkerUrl: subtitlesOptions.octopusRootUrl + 'subtitles-octopus-worker-legacy.js',
         fallbackFont: subtitlesOptions.octopusDefaultFontUrl,
+        onReady: () => {
+          if (isPlaying) {
+            void this.videoPlayer.video.play();
+          }
+          console.log('finished loading octopus', performance.now() - start);
+        }
       };
 
       this.selectedSubtitle?.src !== undefined && (options.subUrl = this.selectedSubtitle.src);
@@ -227,6 +472,13 @@ export class VideoPlayerSubtitles extends HTMLElement {
     }
 
     return true;
+  }
+
+  private trySetOctopusVideo(): void {
+    if (this.currentOctopus!.video !== this.videoElement) {
+      this.clearOctopusResizeObserver();
+      this.currentOctopus!.setVideo(this.videoElement);
+    }
   }
 
   /**
