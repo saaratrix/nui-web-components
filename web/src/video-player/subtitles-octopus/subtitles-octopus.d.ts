@@ -172,6 +172,6 @@ export class SubtitlesOctopus {
     onSuccess: (styles: SubtitleStyle[]) => void,
     onError: (error: unknown) => void
   ): void;
-  setStyle(style: SubtitleStyle, index: number): void;
+  setStyle(style: Partial<SubtitleStyle>, index: number): void;
   removeStyle(index: number): void;
 }
