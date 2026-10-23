@@ -36,6 +36,12 @@ export class VideoPlayer extends HTMLElement {
             --icon-size-svg: 22px;
             --controls-opacity: 1;
         }
+        
+        :host(:fullscreen) {
+            display: block;
+            video: 100%;
+            height: 100%;
+        }
       
         .video-player {
             display: flex;
@@ -99,14 +105,13 @@ export class VideoPlayer extends HTMLElement {
     this.videoControls = this.shadow.querySelector('.video-controls') as HTMLElement;
 
     this.fullscreenButton = this.shadow.querySelector('.icon-fullscreen') as HTMLElement;
-
     this.initEvents();
   }
 
   private initEvents(): void {
     this.container.addEventListener('click', this.onVideoContainerClick, false);
     this.container.addEventListener('dblclick', this.onVideoContainerDblClick, false);
-    this.container.addEventListener('fullscreenchange', this.onFullscreenChanged, false);
+    this.addEventListener('fullscreenchange', this.onFullscreenChanged, false);
 
     this.fullscreenButton.addEventListener('click', this.onFullscreenButtonClick, false);
 
@@ -256,7 +261,7 @@ export class VideoPlayer extends HTMLElement {
     if (isFullscreen) {
       await document.exitFullscreen();
     } else {
-      await this.container.requestFullscreen();
+      await this.requestFullscreen();
     }
   }
 
