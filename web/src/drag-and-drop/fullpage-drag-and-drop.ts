@@ -30,12 +30,15 @@ export class FullpageDragAndDrop {
 
   private eventsAdded = false;
 
+  private componentCreatedElement = false;
+
   constructor(
     dragAndDropElement: HTMLElement | null,
     events: FullpageDragAndDropEvents
   ) {
     if (!dragAndDropElement) {
       this._dragAndDropElement = document.createElement("div");
+      this.componentCreatedElement = true;
     } else {
       this._dragAndDropElement = dragAndDropElement;
     }
@@ -80,6 +83,15 @@ export class FullpageDragAndDrop {
     window.removeEventListener('drop', this.handleWindowDrop);
 
     this.removeDndState();
+  }
+
+  destroy(): void {
+    if (this.componentCreatedElement) {
+      const parentElement = this._dragAndDropElement.parentElement || this._dragAndDropElement.parentNode;
+      parentElement?.removeChild(this.dragAndDropElement);
+    }
+
+    this.removeEventListeners();
   }
 
   private handleDocumentDragOver = (event: DragEvent): void => {

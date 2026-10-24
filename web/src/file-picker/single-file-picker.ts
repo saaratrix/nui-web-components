@@ -4,6 +4,11 @@ import { defaultFullpageDnDCSS, FullpageDragAndDrop } from '../drag-and-drop/ful
 
 const defaultPreviewMaxSize = 128;
 
+export interface FilePickerChangeEvent {
+    files: FileList | null
+    originalEvent: Event,
+};
+
 // TODO: Change 'or drag & drop it anywhere' to only be visible if fullpage-dnd is enabled.
 
 /**
@@ -26,7 +31,6 @@ const defaultPreviewMaxSize = 128;
 // A.k.a: The Great Chooser of Thingies
 export class SingleFilePicker extends HTMLElement {
   // fullpage-dnd meaning if drag & drop is global.
-  //
   static observedAttributes = ['accept', 'fullpage-dnd', 'fullpage-paste', 'expandable-preview', 'icon-only', 'no-preview'];
 
   private shadow: ShadowRoot;
@@ -75,12 +79,13 @@ export class SingleFilePicker extends HTMLElement {
             align-items: center;
         }
         
-        .selection-icon svg {
+        .selection-icon svg, .selection-icon slot::slotted(svg) {
             border-radius: 25%;
             padding: 0.5em;
         }
         
-        .selection-icon:hover svg, .file-picker:has(.selection-text:hover, .selection-text:focus-visible) .selection-icon svg {
+        .selection-icon:hover svg, .file-picker:has(.selection-text:hover, .selection-text:focus-visible) .selection-icon svg,
+        .selection-icon:hover slot::slotted(svg), .file-picker:has(.selection-text:hover, .selection-text:focus-visible) selection-icon slot::slotted(svg) {
             background-image: var(--hover-bg-color);
         }
         
@@ -436,7 +441,6 @@ export class SingleFilePicker extends HTMLElement {
     }
   }
 
-
   public setEnabledFullpageDnd(enabled: boolean): void {
     if (enabled && !this.hasAttribute('fullpage-dnd')) {
       this.setAttribute('fullpage-dnd', '');
@@ -455,7 +459,8 @@ export class SingleFilePicker extends HTMLElement {
 
   private removeFullpageDnd(): void {
     this.dndAreaElement.setAttribute('hidden', '');
-    this.fullpageDragAndDrop?.removeEventListeners();
+    this.fullpageDragAndDrop?.destroy();
+    this.fullpageDragAndDrop = null;
   }
 
   private addFullpageDnd(): void {
