@@ -1,21 +1,17 @@
 import type { VideoPlayer } from './video-player';
-import { Subtitle, SubtitleType } from './video-player.models.js';
-import { SubtitlesOctopus, SubtitleOctopusOptions, SubtitleStyle } from './subtitles-octopus/subtitles-octopus';
+import { getSubtitleTypeFromName, Subtitle, SubtitleType } from './video-player.models.js';
 import { subtitleIcon } from './video-player-icons.js';
 import { controlsIconCSS } from './video-player-shared.js';
 import type { Popover } from '../popover/popover.js';
 import '../popover/popover.js';
+import './video-player-subtitles-adder.js';
+import type { SubtitleAddedEvent, VideoPlayerSubtitlesAdder } from './video-player-subtitles-adder';
+import type { SubtitleHandler } from './subtitle-handlers/subtitle-handler.js';
+import { AssSsaSubtitleHandler, type OctopusSubtitlesOptions } from './subtitle-handlers/ass-ssa-subtitle-handler.js';
+import { SrtSubtitleHandler } from './subtitle-handlers/srt-subtitle-handler.js';
+import { VttSubtitleHandler } from './subtitle-handlers/vtt-handler.js';
 
-interface SubtitlesOptions {
-  // url to root where all the files are eg: './subtitles-octopus/'
-  // must be set or it can't use subtitles octopus library.
-  octopusRootUrl: string | undefined;
-  // url to default font or it can't play any subtitles. Like, './subtitles-octopus/default.woff2'
-  // must be set or it can't use subtitles octopus library.
-  octopusDefaultFontUrl: string | undefined;
-}
-
-export const subtitlesOptions: SubtitlesOptions = {
+export const subtitlesOptions: OctopusSubtitlesOptions = {
   octopusRootUrl: undefined,
   octopusDefaultFontUrl: undefined,
 };
@@ -29,26 +25,26 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
   shadow: ShadowRoot;
 
-  private hasOctopusScript = false;
   private _selectedSubtitle: Subtitle | undefined;
+
+  private subtitlesDirty = false;
   public subtitles: Subtitle[] = [];
 
   public configPopover: Popover;
+  public subtitlesAdder: VideoPlayerSubtitlesAdder;
+  private subtitleHandlers = new Map<SubtitleType, SubtitleHandler>();
+  private activeSubtitleHandler: SubtitleHandler | undefined;
 
   public parsedSubtitles: Subtitle[] = [];
   public addedSubtitles: Subtitle[] = [];
 
+  private languagesElement: HTMLElement;
   private languageRadioElements: Map<Subtitle | undefined, HTMLInputElement> = new Map();
 
   private marginToggleButton!: HTMLButtonElement;
 
-  public currentOctopus: SubtitlesOctopus | undefined;
-
   // This is set by the parent when creating the element.
   public videoPlayer!: VideoPlayer;
-
-  private defaultStyles: SubtitleStyle[] = [];
-  private static MarginVerticalOffset = 100;
 
   constructor() {
     super();
@@ -89,6 +85,8 @@ export class VideoPlayerSubtitles extends HTMLElement {
         .group {
             display: flex;
             gap: 0.25rem;
+            align-items: center;
+            justify-content: space-between;
         }
         
         .languages {
@@ -129,6 +127,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
             </div>
             <div class="group">
                 <button class="margin-button">Meow!</button>
+                <video-player-subtitles-adder />
             </div>
             <hr>
             <fieldset class="languages-container">
@@ -141,6 +140,14 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
     this.configPopover = this.shadow.querySelector('nui-popover') as Popover;
     this.configPopover.setAnchor(this.shadow.querySelector('.video-player-subtitles') as HTMLElement);
+
+    this.subtitlesAdder = this.shadow.querySelector('video-player-subtitles-adder') as VideoPlayerSubtitlesAdder;
+    this.subtitlesAdder.addEventListener('subtitleAdded', (e) => this.onSubtitleAdded(e as CustomEvent<SubtitleAddedEvent>));
+
+    this.languagesElement = this.shadow.querySelector('.subtitles-config .languages') as HTMLElement;
+
+    // this.configPopover.addEventListener('popover:show', () => this.subtitlesAdder.enableDnd());
+    // this.configPopover.addEventListener('popover:hide', () => this.subtitlesAdder.disableDnd());
 
     this.initMarginButton();
 
@@ -160,17 +167,17 @@ export class VideoPlayerSubtitles extends HTMLElement {
     }
 
     this.marginToggleButton.addEventListener('click', () => {
-      if (!this.defaultStyles) {
+      if (!this.activeSubtitleHandler?.canAdjustMargin()) {
         return;
       }
 
       const isCurrentlyActive = this.isMarginOffsetActive();
       if (isCurrentlyActive) {
         delete this.marginToggleButton.dataset['active'];
-        void this.adjustMargin(-VideoPlayerSubtitles.MarginVerticalOffset);
+        void this.adjustMargin(-1);
       } else {
         this.marginToggleButton.dataset['active'] = 'true';
-        void this.adjustMargin(VideoPlayerSubtitles.MarginVerticalOffset);
+        void this.adjustMargin(1);
       }
 
       try {
@@ -184,9 +191,6 @@ export class VideoPlayerSubtitles extends HTMLElement {
     if (window.__nuiOctopus) {
       if (this.selectedSubtitle) {
         void this.changeSubtitle(this.selectedSubtitle);
-      } else {
-        const isPlaying = !this.videoPlayer.video.paused;
-        void this.trySetSubtitlesOctopusInstance(isPlaying);
       }
     }
 
@@ -194,29 +198,16 @@ export class VideoPlayerSubtitles extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.currentOctopus?.freeTrack();
-    if (this.currentOctopus?.video === this.videoElement) {
-      document.addEventListener("fullscreenchange", this.currentOctopus.resizeWithTimeout, false);
-      document.addEventListener("mozfullscreenchange", this.currentOctopus.resizeWithTimeout, false);
-      document.addEventListener("webkitfullscreenchange", this.currentOctopus.resizeWithTimeout, false);
-      document.addEventListener("msfullscreenchange", this.currentOctopus.resizeWithTimeout, false);
-      window.removeEventListener("resize", this.currentOctopus.resizeWithTimeout, false);
-      this.clearOctopusResizeObserver();
+    this.activeSubtitleHandler?.remove();
 
-      const octopus = this.currentOctopus;
-      // Pause event happens slightly later so we want to remove octopus video element after that to not throw due to self.video == null
-      this.videoElement.addEventListener('pause', () => {
-        if (this.videoElement === octopus.video) {
-          octopus.setVideo(null)
+    if (this.addedSubtitles.length > 0) {
+      for (const subtitle of this.addedSubtitles) {
+        if (subtitle.src) {
+          URL.revokeObjectURL(subtitle.src);
         }
-      }, { once: true, capture: false });
-    }
-    this.currentOctopus = undefined;
-  }
-
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
-    if (oldValue === newValue) {
-      return;
+      }
+      this.addedSubtitles = [];
+      this.subtitlesDirty = true;
     }
   }
 
@@ -235,6 +226,32 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
   get videoElement(): HTMLVideoElement {
     return this.videoPlayer.video;
+  }
+
+  getSubtitleHandler(type: SubtitleType): SubtitleHandler | undefined {
+    if (this.subtitleHandlers.has(type)) {
+      return this.subtitleHandlers.get(type)!;
+    }
+
+    let subtitleHandler: SubtitleHandler | undefined;
+    switch (type) {
+      case SubtitleType.Ass:
+      case SubtitleType.Ssa:
+        subtitleHandler = new AssSsaSubtitleHandler(this);
+        this.subtitleHandlers.set(SubtitleType.Ass, subtitleHandler!);
+        this.subtitleHandlers.set(SubtitleType.Ssa, subtitleHandler!);
+        break;
+      case SubtitleType.Srt:
+        subtitleHandler = new SrtSubtitleHandler(this);
+        this.subtitleHandlers.set(SubtitleType.Srt, subtitleHandler!);
+        break;
+      case SubtitleType.Vtt:
+        subtitleHandler = new VttSubtitleHandler(this);
+        this.subtitleHandlers.set(SubtitleType.Vtt, subtitleHandler!);
+        break;
+    }
+
+    return subtitleHandler;
   }
 
   getParsedSubtitlesAsCSV(delimiter: string = VideoPlayerSubtitles.csvDelimiter): string {
@@ -257,7 +274,11 @@ export class VideoPlayerSubtitles extends HTMLElement {
       }
 
       src = src.trim();
-      const type = src.endsWith('.ass') ? SubtitleType.Ass : SubtitleType.Vtt;
+      const type = getSubtitleTypeFromName(src);
+      if (!type) {
+        console.log(`setParsedSubtitlesFromCSV() Could not parse subtitle type from ${type}`);
+        return;
+      }
 
       subtitles.push({
         src,
@@ -268,9 +289,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
     }
 
     this.parsedSubtitles = subtitles;
-    this.subtitles = [...this.parsedSubtitles, ...this.addedSubtitles];
-
-    this.updateSelectedSubtitleReference();
+    this.subtitlesDirty = true;
     this.renderSubtitlesList();
   }
 
@@ -296,7 +315,12 @@ export class VideoPlayerSubtitles extends HTMLElement {
       return;
     }
 
-    const languagesElement = this.shadow.querySelector('.subtitles-config .languages') as HTMLElement;
+    if (this.subtitlesDirty) {
+      this.subtitles = [...this.parsedSubtitles, ...this.addedSubtitles];
+      this.updateSelectedSubtitleReference();
+      this.subtitlesDirty = false;
+    }
+
     this.languageRadioElements.clear();
     const fragment = document.createDocumentFragment();
     for (let i = -1; i < this.subtitles.length; i++) {
@@ -305,8 +329,8 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
     // replaceChildren is chrome 86+
     //languagesElement.replaceChildren(fragment);
-    languagesElement.innerHTML = '';
-    languagesElement.appendChild(fragment);
+    this.languagesElement.innerHTML = '';
+    this.languagesElement.appendChild(fragment);
   }
 
   private renderSubtitleListItem(index: number, subtitle: Subtitle | undefined): HTMLElement {
@@ -345,52 +369,40 @@ export class VideoPlayerSubtitles extends HTMLElement {
       return;
     }
 
-    const isPlaying = !this.videoPlayer.video.paused;
-
+    const oldSubtitleHandles = this.activeSubtitleHandler;
     this.selectedSubtitle = subtitle;
-    const loaded = await this.trySetSubtitlesOctopusInstance(isPlaying);
-    if (!loaded || !this.currentOctopus) {
-      this.clearSelectedSubtitle();
-      return;
+    this.activeSubtitleHandler = this.getSubtitleHandler(subtitle.type);
+    if (oldSubtitleHandles !== this.activeSubtitleHandler) {
+      oldSubtitleHandles?.clearSelectedSubtitle();
     }
 
-    if (subtitle.src) {
-      this.currentOctopus.setTrackByUrl(subtitle.src);
-    } else if (subtitle.content) {
-      this.currentOctopus.setTrack(subtitle.content);
-    }
-
-    this.fetchDefaultStyle(() => {
-      if (this.isMarginOffsetActive() && this.defaultStyles.length > 0) {
-        void this.adjustMargin(VideoPlayerSubtitles.MarginVerticalOffset);
-      }
-    });
+    void this.activeSubtitleHandler?.changeSubtitle(subtitle);
   }
 
-  private fetchDefaultStyle(onFetched?: () => void): void {
-    if (!this.currentOctopus) {
+  private onSubtitleAdded(event: CustomEvent<SubtitleAddedEvent>) {
+    const { file, type } = event.detail;
+
+    if (type === SubtitleType.Srt) {
+      console.log('srt not supported yet, be patient.');
       return;
     }
 
-    this.currentOctopus.getStyles((styles) => {
-      console.log('octopus: All styles', styles);
+    const blobUrl = URL.createObjectURL(file);
+    this.addedSubtitles.push({
+      label: file.name,
+      src: blobUrl,
+      type,
+      srclang: 'eng',
+      title: file.name,
+    });
 
-      const defaultStyles: SubtitleStyle[] = [];
-      for (const style of styles) {
-        if (style.Name === 'Default') {
-          defaultStyles.push(style);
-        }
-      }
-
-      this.defaultStyles = defaultStyles;
-      onFetched?.();
-    }, () => this.defaultStyles = []);
+    this.subtitlesDirty = true;
+    this.renderSubtitlesList();
   }
 
   private clearSelectedSubtitle(): void {
+    this.activeSubtitleHandler?.clearSelectedSubtitle();
     this.selectedSubtitle = undefined;
-    this.currentOctopus?.freeTrack();
-    this.defaultStyles = [];
   }
 
   public isMarginOffsetActive(): boolean {
@@ -405,121 +417,12 @@ export class VideoPlayerSubtitles extends HTMLElement {
     return false;
   }
 
-  public async adjustMargin(offset: number): Promise<void> {
-    if (!this.currentOctopus) {
+  public async adjustMargin(offsetMultiplier: number): Promise<void> {
+    if (!this.activeSubtitleHandler) {
       return;
     }
 
-    for (const style of this.defaultStyles) {
-      const margin = style.MarginV + offset;
-      style.MarginV = margin;
-
-      this.currentOctopus.setStyle({ MarginV: margin, Alignment: 2 }, style._index);
-
-    }
-  }
-
-  private clearOctopusResizeObserver(): void {
-    if (!this.currentOctopus) {
-      return;
-    }
-
-    this.currentOctopus.ro?.disconnect();
-    delete this.currentOctopus.ro;
-  }
-
-  async trySetSubtitlesOctopusInstance(isPlaying: boolean): Promise<boolean> {
-    if (this.currentOctopus) {
-      this.trySetOctopusVideo();
-      return true;
-    }
-
-    if (subtitlesOptions.octopusRootUrl === undefined || subtitlesOptions.octopusDefaultFontUrl === undefined) {
-      console.error(`Need to set octopusRootUrl or octopusDefaultFontUrl on 'subtitlesOptions'`, subtitlesOptions);
-      return false;
-    }
-
-    console.log('started loading octopus');
-    const start = performance.now();
-    this.videoPlayer.video.pause();
-    await this.tryLoadOctopusScript();
-    if (!window.SubtitlesOctopus) {
-      return false;
-    }
-
-    if (window.__nuiOctopus) {
-      this.currentOctopus = window.__nuiOctopus;
-      this.trySetOctopusVideo();
-    } else {
-      const options: SubtitleOctopusOptions = {
-        video: this.videoElement,
-        workerUrl: subtitlesOptions.octopusRootUrl + 'subtitles-octopus-worker.js',
-        legacyWorkerUrl: subtitlesOptions.octopusRootUrl + 'subtitles-octopus-worker-legacy.js',
-        fallbackFont: subtitlesOptions.octopusDefaultFontUrl,
-        onReady: () => {
-          if (isPlaying) {
-            void this.videoPlayer.video.play();
-          }
-          console.log('finished loading octopus', performance.now() - start);
-        }
-      };
-
-      this.selectedSubtitle?.src !== undefined && (options.subUrl = this.selectedSubtitle.src);
-      this.selectedSubtitle?.content !== undefined && (options.subContent = this.selectedSubtitle.content);
-
-      this.currentOctopus = new window.SubtitlesOctopus(options);
-      window.__nuiOctopus = this.currentOctopus;
-    }
-
-    return true;
-  }
-
-  private trySetOctopusVideo(): void {
-    if (this.currentOctopus!.video !== this.videoElement) {
-      this.clearOctopusResizeObserver();
-      this.currentOctopus!.setVideo(this.videoElement);
-    }
-  }
-
-  /**
-   * Create promise if it's not loaded, else re-use existing promise.
-   * Subtitle Octopus is a JavaScript wrapper around {@link https://github.com/libass/libass|libass} to handle .ass and .srt files, uses wasm.
-   */
-  tryLoadOctopusScript(): Promise<void> {
-    if (this.hasOctopusScript || window.__nuiOctopusPromise || window.SubtitlesOctopus) {
-      this.hasOctopusScript = true;
-      return window.__nuiOctopusPromise || Promise.resolve();
-    }
-
-    let script = document.getElementById('subtitles-octopus') as HTMLScriptElement | null;
-    this.hasOctopusScript = true;
-
-    const rootUrl = subtitlesOptions.octopusRootUrl!.endsWith('/') ? subtitlesOptions.octopusRootUrl : subtitlesOptions.octopusRootUrl + '/';
-
-    const promise = new Promise<void>((resolve, reject) => {
-      // Not sure if this can be true if __nuiOctopus is false && SubtitlesOctopus is false.
-      if (!script) {
-        script = document.createElement('script');
-        script.id = 'subtitles-octopus';
-        script.type = 'text/javascript';
-        script.async = true;
-        script.src = `${rootUrl}subtitles-octopus.js`;
-
-        document.head.appendChild(script);
-      }
-
-      // Just some extra precaution in case of race conditions or something odd.
-      const before = window.SubtitlesOctopusOnLoad;
-      window.SubtitlesOctopusOnLoad = before ? () => {
-        before();
-        resolve();
-      } : () => resolve();
-
-      script.addEventListener('error', () => reject('Failed to load subtitle octopus script.'));
-    });
-
-    promise.then(() => delete window.__nuiOctopusPromise);
-    return promise;
+    void this.activeSubtitleHandler.adjustMargin(offsetMultiplier);
   }
 }
 
