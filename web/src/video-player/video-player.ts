@@ -46,11 +46,7 @@ export class VideoPlayer extends HTMLElement {
         .video-player {
             display: flex;
             position: relative;
-        }
-        
-        .video-player:fullscreen {
-            
-        }
+        }       
         
         .video-container {
             font-size: 0;
@@ -118,7 +114,6 @@ export class VideoPlayer extends HTMLElement {
     this.addEventListener('keydown', this.onKeyDown, false);
   }
 
-  isFirstConnectedCallback = true;
   async connectedCallback() {
     this.initEvents();
 
@@ -135,19 +130,6 @@ export class VideoPlayer extends HTMLElement {
         }
       }
     }
-
-    // We only need to set up subtitles on the very first connected callback, otherwise it happens through attributeChangedCallback
-    if (this.isFirstConnectedCallback) {
-      const subtitlesCsv = this.subtitlesCSV;
-      if (subtitlesCsv) {
-        this.subtitlesElement.setParsedSubtitlesFromCSV(subtitlesCsv);
-      }
-    }
-
-    this.isFirstConnectedCallback = false;
-  }
-
-  disconnectedCallback() {
   }
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
@@ -166,7 +148,6 @@ export class VideoPlayer extends HTMLElement {
 
   public get subtitlesElement(): VideoPlayerSubtitles {
     if (!this._subtitlesElement) {
-
       this._subtitlesElement = document.createElement('video-player-subtitles') as VideoPlayerSubtitles;
       this._subtitlesElement.videoPlayer = this;
       this._subtitlesElement.classList.add('action');
@@ -190,13 +171,9 @@ export class VideoPlayer extends HTMLElement {
     this.subtitlesElement.setParsedSubtitlesFromCSV(csv);
   }
 
-  private onVideoClick = (event: MouseEvent): void => {
-    const allowClick = this.isClickAllowed(event);
-    if (!allowClick) {
-      event.preventDefault();
-    }
-  };
-
+  // This is to allow double clicking without pausing/unpausing if you double click.
+  // So if you double click within ~225 ms it doesn't pause/unpause but any slower and it will which felt fast enough for pause/play.
+  // 225ms is roughly 6 frames, it does feel a bit choppy but good enough, maybe iterated on later.
   playbackToggleTimeout: number | null = null;
   private onVideoContainerClick = (event: MouseEvent): void => {
     if (!this.isClickAllowed(event)) {
@@ -209,7 +186,7 @@ export class VideoPlayer extends HTMLElement {
 
     this.playbackToggleTimeout = setTimeout(() => {
       this.togglePlayback();
-      this.clearplaybackToggleTimeout();
+      this.clearPlaybackToggleTimeout();
     }, 225);
   }
 
@@ -218,11 +195,11 @@ export class VideoPlayer extends HTMLElement {
       return;
     }
 
-    this.clearplaybackToggleTimeout();
+    this.clearPlaybackToggleTimeout();
     void this.toggleFullscreen();
   };
 
-  private clearplaybackToggleTimeout(): void {
+  private clearPlaybackToggleTimeout(): void {
     if (this.playbackToggleTimeout) {
       clearTimeout(this.playbackToggleTimeout);
     }

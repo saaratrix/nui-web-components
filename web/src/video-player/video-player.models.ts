@@ -29,8 +29,9 @@ export interface Subtitle {
   // Content of a subtitle.
   content?: string;
   type: SubtitleType;
+  // The text visible in subtitles picker.
   label: string;
-  srclang: string;
+  srclang: 'eng' | 'fin' | 'swe' | string;
   // Eg if you upload a file it can show the original file name if many subtitles or the length has to be truncated.
   title?: string;
 }
@@ -39,6 +40,5 @@ declare global {
   interface Window {
     __nuiOctopusPromise?: Promise<void>;
     __nuiOctopus?: SubtitlesOctopus;
-    __nuiOctopusCanvas?: HTMLCanvasElement;
   }
 }

@@ -8,6 +8,5 @@ It contains symlinks towards all the third party dependencies.
 It contains some assets that are used in different components as an overview. 
 However, for example icons have a .ts file with the svg icons as strings so each component is stand-alone.
 
-* video-player
-  * fullscreen.svg, fullscreen-exit.svg, play.svg, subtitles_sub.svg
-    * Icons file: [video-player-icons](src/video-player/video-player-icons.ts)
+* video-player  
+  * Icons file: [video-player-icons](src/video-player/video-player-icons.ts)
