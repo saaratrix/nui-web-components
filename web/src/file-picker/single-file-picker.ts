@@ -3,22 +3,31 @@ import './file-picker-preview.js';
 import { defaultFullpageDnDCSS, FullpageDragAndDrop } from '../drag-and-drop/fullpage-drag-and-drop.js';
 
 const defaultPreviewMaxSize = 128;
+
+// TODO: Change 'or drag & drop it anywhere' to only be visible if fullpage-dnd is enabled.
+
 /**
  * Attributes:
  * fullpage-dnd: Drag & drop a file anywhere and it'll go to this file picker.
  * fullpage-paste: paste almost anywhere and it'll be as pasting to this file picker.
  * expandable-preview: If you click on the preview item it expands it so it's larger.
  * preview-max-size: the max size of the preview item, default is 128.
+ * icon-only: Skip 'Choose a file or drag & drop it anywhere'
  *
- * Parts:
- * dnd-area: The drag and drop area, surprise!
- * preview: The preview container
+ * Slots:
+ * slot="icon": The selection svg icon. Might not work if not an svg.
+ * slot="text": The selection text, "Choose a file ..."
+ * slot="dnd-content": The content of the drag & drop if enabled.
+ *
+ * CSS Parts:
+ * ::part(dnd-area): The drag and drop area, surprise!
+ * ::part(preview): The preview container
  */
 // A.k.a: The Great Chooser of Thingies
 export class SingleFilePicker extends HTMLElement {
   // fullpage-dnd meaning if drag & drop is global.
   //
-  static observedAttributes = ['accept', 'fullpage-dnd', 'fullpage-paste', 'expandable-preview'];
+  static observedAttributes = ['accept', 'fullpage-dnd', 'fullpage-paste', 'expandable-preview', 'icon-only', 'no-preview'];
 
   private shadow: ShadowRoot;
 
@@ -71,7 +80,6 @@ export class SingleFilePicker extends HTMLElement {
             padding: 0.5em;
         }
         
-        /* For simplicity this could just be: .file-picker:hover .selection-icon { }  */
         .selection-icon:hover svg, .file-picker:has(.selection-text:hover, .selection-text:focus-visible) .selection-icon svg {
             background-image: var(--hover-bg-color);
         }
@@ -162,31 +170,35 @@ export class SingleFilePicker extends HTMLElement {
         
         [hidden] {
             display: none !important;
-        }
+        }        
         
         ${defaultFullpageDnDCSS}
       </style>
       <div class="file-picker" for="file-input" part="file-picker-container">
         <div class="selection-icon">
-            <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
+            <slot name="icon">
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                >
                 <path
-                  d="M12 16V4M12 4L7.5 8.5M12 4L16.5 8.5M5 19V21H19V19"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-              />
+                    d="M12 16V4M12 4L7.5 8.5M12 4L16.5 8.5M5 19V21H19V19"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </slot>
         </div>
         <label class="selection-text" for="file-input">
-          <strong>Choose a file</strong>
-          <small>or drag and drop it anywhere.</small>
+            <slot name="text">
+                <strong>Choose a file</strong>
+                <small>or drag and drop it anywhere.</small>
+            </slot>
         </label>
         <div class="preview" hidden part="preview">
             <div class="preview-item">
@@ -198,7 +210,6 @@ export class SingleFilePicker extends HTMLElement {
                     <div class="metadata">
                         <span class="size"></span>
                     </div>
-                    
                 </div>
                 <small class="info">Drop another file to replace.</small>
                 <div>
@@ -208,7 +219,7 @@ export class SingleFilePicker extends HTMLElement {
         </div>
         <input class="file-input" type="file" id="file-input" hidden>  
       </div>
-      <div class="drag-drop-area">
+      <div class="drag-drop-area" part="dnd-area" hidden>
         <slot name="dnd-content">
           <p>
             Drop file anywhere.
@@ -288,6 +299,14 @@ export class SingleFilePicker extends HTMLElement {
     return defaultPreviewMaxSize;
   }
 
+  get skipPreview(): boolean {
+    return this.hasAttribute('no-preview');
+  }
+
+  get showOnlyIcon(): boolean {
+    return this.hasAttribute('icon-only');
+  }
+
   connectedCallback() {
     if (this.hasAttribute('fullpage-paste') && !this.isFullpagePasteEnabled) {
       document.addEventListener('paste', this.onFullpagePaste);
@@ -313,6 +332,14 @@ export class SingleFilePicker extends HTMLElement {
       this.onFullpageDnd(newValue);
     } else if (name === 'expandable-preview') {
       this.pickerPreview.toggleAttribute('expandable-preview', !!newValue);
+    } else if (name ==='icon-only') {
+      this.selectionTextContainer.hidden = newValue !== null || !this.previewContainer.hidden;
+    } else if (name === 'no-preview') {
+      this.previewContainer.hidden = newValue !== null || !this.selectionTextContainer.hidden;
+      if (newValue !== null) {
+        this.pickerPreview.clear();
+        this.selectionTextContainer.hidden = this.showOnlyIcon;
+      }
     }
   }
 
@@ -340,9 +367,12 @@ export class SingleFilePicker extends HTMLElement {
 
   private onFileChanged(e: Event) {
     this.pickerPreview.clear();
+    if (this.skipPreview) {
+      return;
+    }
 
     const hasFile = !!this.files?.[0];
-    this.selectionTextContainer.hidden = hasFile;
+    this.selectionTextContainer.hidden = hasFile || this.showOnlyIcon;
     this.previewContainer.hidden = !hasFile;
 
     if (!hasFile) {
@@ -406,6 +436,15 @@ export class SingleFilePicker extends HTMLElement {
     }
   }
 
+
+  public setEnabledFullpageDnd(enabled: boolean): void {
+    if (enabled && !this.hasAttribute('fullpage-dnd')) {
+      this.setAttribute('fullpage-dnd', '');
+    } else if (!enabled && this.hasAttribute('fullpage-dnd')) {
+      this.removeAttribute('fullpage-dnd');
+    }
+  }
+
   private onFullpageDnd(value: string | null) {
     if (value === null) {
       this.removeFullpageDnd();
@@ -415,7 +454,7 @@ export class SingleFilePicker extends HTMLElement {
   }
 
   private removeFullpageDnd(): void {
-    this.dndAreaElement.classList.add('hidden');
+    this.dndAreaElement.setAttribute('hidden', '');
     this.fullpageDragAndDrop?.removeEventListeners();
   }
 
@@ -426,7 +465,7 @@ export class SingleFilePicker extends HTMLElement {
       });
     }
 
-    this.dndAreaElement.classList.remove('hidden');
+    this.dndAreaElement.removeAttribute('hidden');
     this.fullpageDragAndDrop!.tryAddEventListeners();
   }
 

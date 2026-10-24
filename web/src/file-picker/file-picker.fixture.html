@@ -11,8 +11,12 @@
 <body>
   <div>
     <label>Fullpage dnd: <input type="checkbox" id="dnd" checked></label>
-    -
+    |
     <label>Fullpage paste: <input type="checkbox" id="paste"></label>
+    |
+    <label>Icon only: <input type="checkbox" id="icon-only"></label>
+    |
+    <label>No preview: <input type="checkbox" id="no-preview"></label>
   </div>
   <br>
   <single-file-picker id="picker" accept="image/*,.pdf" fullpage-dnd preview-max-size="64"></single-file-picker>
@@ -24,6 +28,8 @@
       const picker = document.querySelector('single-file-picker');
       const dnd = document.getElementById('dnd');
       const paste = document.getElementById('paste');
+      const iconOnly = document.getElementById('icon-only');
+      const noPreview = document.getElementById('no-preview');
 
       dnd.addEventListener('change', function() {
         this.checked ? picker.setAttribute('fullpage-dnd', '') : picker.removeAttribute('fullpage-dnd');
@@ -31,6 +37,14 @@
 
       paste.addEventListener('change', function() {
         this.checked ? picker.setAttribute('fullpage-paste', '') : picker.removeAttribute('fullpage-paste');
+      });
+
+      iconOnly.addEventListener('change', function() {
+        this.checked ? picker.setAttribute('icon-only', '') : picker.removeAttribute('icon-only');
+      });
+
+      noPreview.addEventListener('change', function() {
+        this.checked ? picker.setAttribute('no-preview', '') : picker.removeAttribute('no-preview');
       });
     });
   </script>
