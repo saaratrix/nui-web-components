@@ -11,8 +11,28 @@ enum PopoverTrigger {
   Hover
 }
 
+
 export interface PortalHTMLElement extends HTMLElement {
   __contentReference?: unknown;
+}
+
+interface PopoverEventMap extends HTMLElementEventMap {
+  "popover:show": CustomEvent<void>;
+  "popover:hide": CustomEvent<void>;
+}
+
+export interface Popover {
+  addEventListener(
+    type: keyof PopoverEventMap,
+    listener: (event: CustomEvent) => void,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions
+  ): void;
 }
 
 export class Popover extends HTMLElement {
@@ -245,6 +265,10 @@ export class Popover extends HTMLElement {
     positionPopover(this.popoverContainer, anchor, {
       arrow: this.showArrow ? this.arrow : null,
     });
+    this.dispatchEvent(new CustomEvent('popover:show', {
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   public hide(): void {
@@ -256,6 +280,10 @@ export class Popover extends HTMLElement {
     this.removeEvent(document, 'click');
     this.addSelfBackToParent();
     this.popoverContainer.hidden = true;
+    this.dispatchEvent(new CustomEvent('popover:hide', {
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   private onAnchorClick() {
