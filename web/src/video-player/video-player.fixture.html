@@ -10,7 +10,10 @@
 <body>
   <div>
     <label>A setting: <input type="checkbox" id="dnd" checked></label>
+    |
     <button id="add-remove-test">Try remove & add video element</button>
+    |
+    <button id="remove-subtitles">Remove subtitles</button>
   </div>
   <br>
   <video-player id="component" subtitles="/nui-web-components/web/src/video-player/_test/test.ass|English|eng" >
@@ -29,7 +32,7 @@
       const component = document.getElementById('component');
 
       if (component.subtitlesElement.subtitles.length > 0) {
-        void component.subtitlesElement.changeSubtitle(component.subtitlesElement.subtitles[0]);
+        void component.changeSubtitles(0);
       }
 
       const addRemoveTestButton = document.getElementById('add-remove-test');
@@ -42,6 +45,12 @@
         }, 250);
 
       });
+
+      const removeSubtitlesButton = document.getElementById('remove-subtitles');
+      removeSubtitlesButton.addEventListener('click', () => {
+        component.removeAttribute('subtitles');
+      })
+
     });
   </script>
 </body>

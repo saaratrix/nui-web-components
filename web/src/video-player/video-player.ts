@@ -175,6 +175,11 @@ export class VideoPlayer extends HTMLElement {
     this.subtitlesElement.setParsedSubtitlesFromCSV(csv);
   }
 
+  public changeSubtitles(index: number): Promise<void> {
+    const subtitle = this.subtitlesElement.subtitles[index];
+    return this.subtitlesElement.changeSubtitle(subtitle);
+  }
+
   // This is to allow double clicking without pausing/unpausing if you double click.
   // So if you double click within ~225 ms it doesn't pause/unpause but any slower and it will which felt fast enough for pause/play.
   // 225ms is roughly 6 frames, it does feel a bit choppy but good enough, maybe iterated on later.

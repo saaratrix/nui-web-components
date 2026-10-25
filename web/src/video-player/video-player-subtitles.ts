@@ -146,9 +146,6 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
     this.languagesElement = this.shadow.querySelector('.subtitles-config .languages') as HTMLElement;
 
-    // this.configPopover.addEventListener('popover:show', () => this.subtitlesAdder.enableDnd());
-    // this.configPopover.addEventListener('popover:hide', () => this.subtitlesAdder.disableDnd());
-
     this.initMarginButton();
 
     this.addEventListener('subtitleChanged', (event) => {
