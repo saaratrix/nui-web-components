@@ -185,10 +185,8 @@ export class VideoPlayerSubtitles extends HTMLElement {
   }
 
   connectedCallback() {
-    if (window.__nuiOctopus) {
-      if (this.selectedSubtitle) {
-        void this.changeSubtitle(this.selectedSubtitle);
-      }
+    if (this.selectedSubtitle) {
+      void this.changeSubtitle(this.selectedSubtitle);
     }
 
     this.renderSubtitlesList();

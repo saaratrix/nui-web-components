@@ -16,7 +16,7 @@
     <button id="remove-subtitles">Remove subtitles</button>
   </div>
   <br>
-  <video-player id="component" subtitles="/nui-web-components/web/src/video-player/_test/test.ass|English|eng" >
+  <video-player id="component" subtitles="/nui-web-components/web/src/video-player/_test/test.ass|English|eng" autoplay>
     <source slot="sources" src="_test/test.mp4" type="video/mp4" />
   </video-player>
 
@@ -49,7 +49,7 @@
       const removeSubtitlesButton = document.getElementById('remove-subtitles');
       removeSubtitlesButton.addEventListener('click', () => {
         component.removeAttribute('subtitles');
-      })
+      });
 
     });
   </script>

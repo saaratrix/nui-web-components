@@ -9,7 +9,7 @@ import { controlsIconCSS } from './video-player-shared.js';
  * subtitles: CSV with | as delimiter for each {@link Subtitle} src,label,srclang
  */
 export class VideoPlayer extends HTMLElement {
-  static observedAttributes = ['subtitles', 'poster'];
+  static observedAttributes = ['subtitles', 'poster', 'autoplay'];
 
   shadow: ShadowRoot;
 
@@ -143,6 +143,17 @@ export class VideoPlayer extends HTMLElement {
 
     if (name === 'subtitles') {
       this.subtitlesCSV = newValue as string | null;
+    }
+
+    if (name === 'autoplay') {
+      if (newValue !== null) {
+        this.video.setAttribute('autoplay', '');
+        try {
+          void this.video.play();
+        } catch (e) { }
+      } else {
+        this.removeAttribute('autoplay');
+      }
     }
   }
 

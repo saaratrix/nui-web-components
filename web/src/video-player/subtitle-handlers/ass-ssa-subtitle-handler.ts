@@ -126,51 +126,62 @@ export class AssSsaSubtitleHandler implements SubtitleHandler {
   }
 
   async trySetSubtitlesOctopusInstance(isPlaying: boolean): Promise<boolean> {
-    if (this.currentOctopus) {
-      this.trySetOctopusVideo();
-      return true;
-    }
+    return new Promise<boolean>((res, rej) => {
+      if (this.currentOctopus) {
+        this.trySetOctopusVideo();
+        return res(true);
+      }
 
-    if (subtitlesOptions.octopusRootUrl === undefined || subtitlesOptions.octopusDefaultFontUrl === undefined) {
-      console.error(`Need to set octopusRootUrl or octopusDefaultFontUrl on 'subtitlesOptions'`, subtitlesOptions);
-      return false;
-    }
+      if (subtitlesOptions.octopusRootUrl === undefined || subtitlesOptions.octopusDefaultFontUrl === undefined) {
+        console.error(`Need to set octopusRootUrl or octopusDefaultFontUrl on 'subtitlesOptions'`, subtitlesOptions);
+        return res(false);
+      }
 
-    console.log('started loading octopus');
-    const start = performance.now();
-    this.videoPlayerSubtitles.videoPlayer.video.pause();
-    await this.tryLoadOctopusScript();
-    if (!window.SubtitlesOctopus) {
-      return false;
-    }
-
-    if (window.__nuiOctopus) {
-      this.currentOctopus = window.__nuiOctopus;
-      this.trySetOctopusVideo();
-    } else {
-      const options: SubtitleOctopusOptions = {
-        video: this.videoElement,
-        workerUrl: subtitlesOptions.octopusRootUrl + 'subtitles-octopus-worker.js',
-        legacyWorkerUrl: subtitlesOptions.octopusRootUrl + 'subtitles-octopus-worker-legacy.js',
-        fallbackFont: subtitlesOptions.octopusDefaultFontUrl,
-        onReady: () => {
-          if (isPlaying) {
-            void this.videoPlayerSubtitles.videoPlayer.video.play();
-          }
-          console.log('finished loading octopus', performance.now() - start);
+      this.videoPlayerSubtitles.videoPlayer.video.pause();
+      this.tryLoadOctopusScript().then(() => {
+        if (!window.SubtitlesOctopus) {
+          return res(false);
         }
-      };
 
-      const selectedSubtitle = this.videoPlayerSubtitles.selectedSubtitle;
+        if (window.__nuiOctopus) {
+          this.currentOctopus = window.__nuiOctopus;
+          this.trySetOctopusVideo();
+          return res(true);
+        } else {
+          const options: SubtitleOctopusOptions = {
+            video: this.videoElement,
+            workerUrl: subtitlesOptions.octopusRootUrl! + 'subtitles-octopus-worker.js',
+            legacyWorkerUrl: subtitlesOptions.octopusRootUrl! + 'subtitles-octopus-worker-legacy.js',
+            fallbackFont: subtitlesOptions.octopusDefaultFontUrl!,
+            // Initialize with an empty subcontent, it'll get replaced if there is a pending subtitle to load right after.
+            subContent: `
+            [Script Info]
+            Title:
+            ScriptType: v4.00+
+            WrapStyle: 0
+            PlayResX: 1
+            PlayResY: 1
+            `,
+            onReady: () => {
+              // We have a setTimeout to let web worker etc set itself up, if we change subtitle right away there is a higher chance that the very first line fails.
+              // It visible shows then flashes itself away.
+              // Magic number of 75, 50 still had the flash.
+              setTimeout(() => {
+                res(true);
+                if (isPlaying) {
+                  void this.videoPlayerSubtitles.videoPlayer.video.play();
+                }
+              }, 75);
+            }
+          };
 
-      selectedSubtitle?.src !== undefined && (options.subUrl = selectedSubtitle.src);
-      selectedSubtitle?.content !== undefined && (options.subContent = selectedSubtitle.content);
+          this.currentOctopus = new window.SubtitlesOctopus(options);
+          window.__nuiOctopus = this.currentOctopus;
+        }
+      })
+      .catch(rej);
+    });
 
-      this.currentOctopus = new window.SubtitlesOctopus(options);
-      window.__nuiOctopus = this.currentOctopus;
-    }
-
-    return true;
   }
 
   private trySetOctopusVideo(): void {
