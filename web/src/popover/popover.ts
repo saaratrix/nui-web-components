@@ -1,7 +1,7 @@
-import { createArrowPopoverCSS, positionPopover } from '../utility/popover-utility.js';
+import { createArrowPopoverCSS, positionPopover } from '../popover/popover-utility.js';
 
 interface AddedEvent {
-  element: Node;
+  element: Node | Window;
   type: string;
   method: (event: Event) => void;
 }
@@ -102,13 +102,13 @@ export class Popover extends HTMLElement {
         
         .arrow {
             position: absolute;
-            width: var(--arrow-width, 12px);
-            height: var(--arrow-height, 12px);
+            width: var(--arrow-size, 12px);
+            height: var(--arrow-size, 12px);
             transform: rotate(45deg);
             background-color: var(--arrow-color, #eee);
         }
         
-        ${createArrowPopoverCSS('.popover', '.arrow', 12)}
+        ${createArrowPopoverCSS('.popover', '.arrow')}
         
       </style>
       
@@ -201,6 +201,10 @@ export class Popover extends HTMLElement {
     this.setAttribute('trigger', trigger);
   }
 
+  private tryGetAnchor(): HTMLElement | null {
+    return this.currentAnchor || this.parentElement;
+  }
+
   setAnchor(anchor: HTMLElement | null) {
     if (anchor === this.currentAnchor) {
       return;
@@ -219,9 +223,10 @@ export class Popover extends HTMLElement {
 
     this.addEvent(anchor, 'pointerenter', () => this.onAnchorPointerEnter());
     this.addEvent(anchor, 'pointerleave', () => this.onAnchorPointerLeave());
+    this.addEvent(window, 'resize', () => this.onWindowResize());
   }
 
-  private addEvent(element: Node, type: string, method: (event: Event) => void, options?: boolean | AddEventListenerOptions) {
+  private addEvent(element: Node | Window, type: string, method: (event: Event) => void, options?: boolean | AddEventListenerOptions) {
     const hasEvent = this.events.find(e => e.element === element && e.type === type);
     if (hasEvent) {
       return;
@@ -251,7 +256,7 @@ export class Popover extends HTMLElement {
     if (this.isVisible) {
       return;
     }
-    const anchor = this.currentAnchor || this.parentElement;
+    const anchor = this.tryGetAnchor();
     if (!anchor) {
       console.log(`Can't show popover due to no anchor, call setAnchor() to set an anchor element.`);
       return;
@@ -333,6 +338,17 @@ export class Popover extends HTMLElement {
     this.hide();
   }
 
+  private onWindowResize() {
+    if (!this.isVisible) {
+      return;
+    }
+
+    const anchor = this.tryGetAnchor();
+    positionPopover(this.popoverContainer, anchor!, {
+      arrow: this.showArrow ? this.arrow : null,
+    });
+  }
+
   private isHoverAllowed(): boolean {
     switch (this.trigger) {
       case PopoverTrigger.Hover:
@@ -344,66 +360,83 @@ export class Popover extends HTMLElement {
 
   private addSelfToPortalRoot() {
     if (!this.portalRoot) {
-      let portalRoot = document.getElementById('nui-portal-root') as PortalHTMLElement | null;
-      if (!portalRoot) {
-        portalRoot = document.createElement('div');
-        portalRoot.id = 'nui-portal-root';
-        document.body.appendChild(portalRoot);
-        portalRoot.attachShadow({ mode: 'open' });
-        const portalStyle = document.createElement('style');
-        portalRoot.shadowRoot!.appendChild(portalStyle);
-        this.portalStyle = portalStyle;
-      }
-      else {
-        this.portalStyle = portalRoot.querySelector('style');
-      }
-      this.portalRoot = portalRoot;
-      this.portalShadow = portalRoot.shadowRoot as ShadowRoot;
+      this.portalRoot = this.findOrCreatePortalRoot();
     }
 
     if (this.portalRoot.__contentReference !== this) {
-      const rootNode = this.getRootNode();
-      this.portalStyle!.textContent = '';
-
-      if (rootNode instanceof ShadowRoot) {
-        let popoverStyle: CSSStyleSheet | undefined;
-        for (let i = 0; i < rootNode.styleSheets.length; i++) {
-          const style = rootNode.styleSheets.item(i);
-          if (!style?.ownerNode || !('id' in style.ownerNode) || style.ownerNode.id !== 'popover') {
-            continue;
-          }
-
-          popoverStyle = style;
-          break;
-        }
-
-        if (popoverStyle) {
-          let css = '';
-          const rules = popoverStyle.cssRules;
-          for (let i = 0; i < rules.length; i++) {
-            const rule = rules.item(i);
-            if (rule) {
-              css += rule.cssText;
-            }
-          }
-
-          this.portalStyle!.textContent = css;
-        }
-
-        this.portalRoot.__contentReference = this;
-      }
+      this.tryCopyStylesToPortalRoot();
+      this.portalRoot.__contentReference = this;
     }
 
-    const documentElement = document.fullscreenElement || document.body;
-    if (this.portalRoot.parentElement !== documentElement) {
-      if (documentElement.shadowRoot) {
-        documentElement.shadowRoot.appendChild(this.portalRoot);
-      } else {
-        documentElement.appendChild(this.portalRoot);
-      }
-    }
+    this.setPortalRootParent();
 
     this.portalShadow!.appendChild(this);
+  }
+
+  private findOrCreatePortalRoot(): PortalHTMLElement {
+    let portalRoot = document.getElementById('nui-portal-root') as PortalHTMLElement | null;
+    if (!portalRoot) {
+      portalRoot = document.createElement('div');
+      portalRoot.id = 'nui-portal-root';
+      document.body.appendChild(portalRoot);
+      portalRoot.attachShadow({ mode: 'open' });
+      const portalStyle = document.createElement('style');
+      portalRoot.shadowRoot!.appendChild(portalStyle);
+      this.portalStyle = portalStyle;
+    }
+    else {
+      this.portalStyle = portalRoot.querySelector('style');
+    }
+    this.portalShadow = portalRoot.shadowRoot as ShadowRoot;
+    return portalRoot;
+  }
+
+  private tryCopyStylesToPortalRoot() {
+    const rootNode = this.getRootNode();
+    this.portalStyle!.textContent = '';
+    if (!(rootNode instanceof ShadowRoot) && !(rootNode instanceof Document)) {
+      return;
+    }
+
+    let popoverStyle: CSSStyleSheet | undefined;
+    for (let i = 0; i < rootNode.styleSheets.length; i++) {
+      const style = rootNode.styleSheets.item(i);
+      if (!style?.ownerNode || !('id' in style.ownerNode) || style.ownerNode.id !== 'popover') {
+        continue;
+      }
+
+      popoverStyle = style;
+      break;
+    }
+
+    if (!popoverStyle) {
+      return;
+    }
+
+    let css = '';
+    const rules = popoverStyle.cssRules;
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules.item(i);
+      if (rule) {
+        css += rule.cssText;
+      }
+    }
+
+    this.portalStyle!.textContent = css;
+  }
+
+  /**
+   * If in fullscreen mode we need to attach the portal root element to document.fullScreenElement instead of body.
+   */
+  private setPortalRootParent(): void {
+    const documentElement = document.fullscreenElement || document.body;
+    if (this.portalRoot!.parentElement !== documentElement) {
+      if (documentElement.shadowRoot) {
+        documentElement.shadowRoot.appendChild(this.portalRoot!);
+      } else {
+        documentElement.appendChild(this.portalRoot!);
+      }
+    }
   }
 
   private addSelfBackToParent() {

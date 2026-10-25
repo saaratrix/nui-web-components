@@ -13,9 +13,11 @@ export function positionPopover(popover: HTMLElement, anchor: HTMLElement, optio
   const { x: startX, y: startY } = popover.offsetParent?.getBoundingClientRect() ?? { x: 0, y: 0 };
   const pRects = popover.getBoundingClientRect();
   const aRects = anchor.getBoundingClientRect();
+  // Arrow is rotated 45 degrees so if we divide width by Math.sqrt(2) we get original width.
+  const arrowSize = options.arrow ? options.arrow.getBoundingClientRect().width / 1.4142135623730951 : 0;
 
   const margin = options.margin ?? 12;
-  const gap = options.gap ?? 12;
+  const gap = Math.max(options.gap ?? 12, arrowSize / 2);
 
   // const outerLeft = options.outerBounds?.left ?? 0;
   // const outerRight = options.outerBounds?.right ?? window.innerWidth;
@@ -65,33 +67,34 @@ export function positionPopover(popover: HTMLElement, anchor: HTMLElement, optio
   popover.style.top = `${top - startY + window.scrollY}px`;
 
   if (options.arrow) {
-    positionArrow(options.arrow, anchor, left, top, placement);
+    positionArrow(options.arrow, anchor, arrowSize, left, top, placement);
   }
 }
 
 // Example of arrow placement css.
 // language=CSS
-export const createArrowPopoverCSS = (selector: string, arrowClass: string, arrowSize: number): string => `
+export const createArrowPopoverCSS = (selector: string, arrowClass: string): string => `
 ${selector}[data-placement="bottom"] ${arrowClass} {
-  top: -${arrowSize / 2}px;
+  top: calc(var(--arrow-size, 12px) / -2);
 }
 
 ${selector}[data-placement="top"] ${arrowClass} {
-  bottom: -${arrowSize / 2}px;
+  bottom: calc(var(--arrow-size, 12px) / -2);
 }
 
 ${selector}[data-placement="right"] ${arrowClass} {
-  left: -${arrowSize / 2}px;
+  left: calc(var(--arrow-size, 12px) / -2);
 }
 
 ${selector}[data-placement="left"] ${arrowClass} {
-  right: -${arrowSize / 2}px;
+  right: calc(var(--arrow-size, 12px) / -2);
 }
 `;
 
 function positionArrow(
   arrow: HTMLElement,
   anchor: HTMLElement,
+  arrowSize: number,
   popoverLeft: number,
   popoverTop: number,
   placement: PopoverPlacement
@@ -105,11 +108,11 @@ function positionArrow(
 
   if (placement === 'bottom' || placement === 'top') {
     const anchorCenterX = a.left + a.width / 2;
-    const arrowLeft = anchorCenterX - popoverLeft;
+    const arrowLeft = anchorCenterX - popoverLeft - arrowSize / 2;
     arrow.style.left = `${arrowLeft}px`;
   } else {
     const anchorCenterY = a.top + a.height / 2;
-    const arrowTop = Math.max(anchorCenterY - popoverTop, 12);
+    const arrowTop = Math.max(anchorCenterY - popoverTop - arrowSize / 2, arrowSize);
     arrow.style.top = `${arrowTop}px`;
   }
 }
