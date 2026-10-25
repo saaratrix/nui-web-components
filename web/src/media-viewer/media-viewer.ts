@@ -1,7 +1,8 @@
 import { ControlsPlacement, controlsPlacementValues, defaultControlsPlacement, dispatchViewingFailedToLoadEvent, dispatchViewingItemChangedEvent, MediaType, MediaTypes } from './media-viewer-models.js';
-import { type Subtitle, SubtitleType } from '../video-player/video-player.models.js';
 import type { MediaViewerControls } from './media-viewer-controls.js';
+import type { VideoPlayer } from '../video-player/video-player';
 import './media-viewer-controls.js';
+import '../video-player/video-player.js';
 
 type MediaAndMimeType = [mediaType: MediaTypes, mimeType: string];
 
@@ -199,10 +200,10 @@ export class MediaViewer extends HTMLElement {
     return this._viewItemElement!;
   }
 
-  getViewerContentElement(): HTMLVideoElement | HTMLAudioElement | HTMLImageElement | null {
+  getViewerContentElement(): VideoPlayer | HTMLAudioElement | HTMLImageElement | null {
     switch (this.activeMediaType) {
       case MediaType.Video:
-        return this.viewItemElement.querySelector('video');
+        return this.viewItemElement.querySelector('video-player');
       case MediaType.Audio:
         return this.viewItemElement.querySelector('audio');
       case MediaType.Image:
@@ -210,50 +211,6 @@ export class MediaViewer extends HTMLElement {
     }
 
     return null;
-  }
-
-  private _subtitles: Subtitle[] | null = null;
-  get subtitles(): Subtitle[] | null {
-    if (this._subtitles) {
-      return this._subtitles;
-    }
-
-    const subtitlesRaw = this.getAttribute("subtitles");
-    if (!subtitlesRaw) {
-      return null;
-    }
-
-    let result: Subtitle[] = [];
-    const items = subtitlesRaw.split('|');
-    for (let i = 0; i < items.length; i += 3) {
-      const src = items[i];
-      const label = items[i + 1];
-      const srclang = items[i + 2];
-
-      if (!src || !label || !srclang) {
-        continue;
-      }
-
-      result.push({
-        src: src.trim(),
-        label: label.trim(),
-        type: SubtitleType.Vtt,
-        srclang: srclang.trim(),
-      });
-    }
-
-    this._subtitles = result;
-    return result;
-  }
-
-  set subtitles(subtitles: Subtitle[] | null) {
-    this._subtitles = subtitles;
-    if (!subtitles) {
-      this.removeAttribute('subtitles');
-    } else {
-      const subtitlesRaw = subtitles.map(s => [s.src, s.label, s.srclang]).join(',');
-      this.setAttribute("subtitles", subtitlesRaw);
-    }
   }
 
   get controlsElement(): MediaViewerControls {
@@ -369,40 +326,22 @@ export class MediaViewer extends HTMLElement {
   }
 
   renderSubtitles(): string {
-    const subtitles = this.subtitles;
-    if (!subtitles) {
-      return '';
-    }
-
-    let subtitlesHtml = '';
-
-    for (const subtitle of subtitles) {
-      // TODO: This should be setting or something.
-      const defaultHtml = subtitle.srclang === 'en' ? 'default' : '';
-
-      const html = `
-<track
-  label=${subtitle.label}
-  src="${subtitle.src}"
-  srclang=${subtitle.srclang}
-  kind="subtitles"
-  ${defaultHtml}
-/>`;
-      subtitlesHtml += html;
-    }
-
-    return subtitlesHtml;
+      const subtitlesValue = this.getAttribute('subtitles');
+      if (subtitlesValue) {
+        return `subtitles=${subtitlesValue} `;
+      } else {
+        return '';
+      }
   }
 
   renderVideo(src: string, mimeType: string) {
     const subtitlesHtml = this.renderSubtitles();
 
-    this.viewItemElement.innerHTML = `<video controls autoplay draggable="false">
-        <source src="${ src }" type="${ mimeType }">
-        ${subtitlesHtml}
-      </video>`;
+    this.viewItemElement.innerHTML = `<video-player autoplay ${subtitlesHtml} draggable="false">
+        <source slot="sources" src="${ src }" type="${ mimeType }">
+      </video-player>`;
 
-    const videoElement = this.viewItemElement.querySelector('video') as HTMLVideoElement;
+    const videoElement = this.viewItemElement.querySelector('video-player') as VideoPlayer;
     this.setMaxDimensions(videoElement);
 
     videoElement.querySelector<HTMLSourceElement>('source')!.onerror = () => this.handleMediaError(src);

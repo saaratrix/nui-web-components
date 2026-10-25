@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Media Viewer Fixture</title>
     <style>
         body {
             background-color: #2c2c38;
@@ -19,7 +19,7 @@
 <body>
     <media-viewer
         id="test-viewer"
-        src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+        src="/nui-web-components/web/src/video-player/_test/test.mp4"
         controls-placement="page:left"
     ></media-viewer>
 
@@ -55,7 +55,8 @@
 
       document.querySelector("#load-video").onclick = () => {
         viewer.src =
-          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+          // "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+          "/nui-web-components/web/src/video-player/_test/test.mp4";
       };
 
       document.getElementById('auto-adjust').onchange = function (){

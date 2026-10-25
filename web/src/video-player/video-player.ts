@@ -45,7 +45,9 @@ export class VideoPlayer extends HTMLElement {
       
         .video-player {
             display: flex;
+            align-items: center;
             position: relative;
+            height: 100%;
         }       
         
         .video-container {
@@ -153,9 +155,7 @@ export class VideoPlayer extends HTMLElement {
     if (name === 'autoplay') {
       if (newValue !== null) {
         this.video.setAttribute('autoplay', '');
-        try {
-          void this.video.play();
-        } catch (e) { }
+        this.video.play().then().catch(() => {});
       } else {
         this.removeAttribute('autoplay');
       }
@@ -179,7 +179,7 @@ export class VideoPlayer extends HTMLElement {
   }
 
   public get isFullScreen(): boolean {
-    return document.fullscreenElement === this;
+    return document.fullscreenElement !== null;
   }
 
   public get subtitlesCSV(): string | null {
@@ -240,16 +240,25 @@ export class VideoPlayer extends HTMLElement {
   };
 
   private onKeyDown = (event: KeyboardEvent): void => {
+    let handled = false;
+
     switch (event.key) {
       case ' ':
         this.togglePlayback();
+        handled = true;
         break;
       case 'ArrowLeft':
         this.seekBackwards();
+        handled = true;
         break;
       case 'ArrowRight':
         this.seekForwards();
+        handled = true;
         break;
+    }
+
+    if (handled) {
+      event.stopPropagation();
     }
   }
 
@@ -273,7 +282,9 @@ export class VideoPlayer extends HTMLElement {
   };
 
   private isClickAllowed(event: MouseEvent): boolean {
-     return (this.video.offsetHeight - event.clientY) >= 64 && !(event.target as HTMLElement).closest('.action');
+    const rects = this.video.getBoundingClientRect();
+    const isOutside = event.clientY > rects.bottom || event.clientY < rects.bottom - 64;
+    return isOutside && !(event.target as HTMLElement).closest('.action');
   }
 
   public async toggleFullscreen(): Promise<void> {

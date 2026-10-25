@@ -23,5 +23,6 @@ Budget jira board!
     * Improve controls opacity behaviour:
         * If paused always show
         * Move into web component and just improve the logic a bit with opacity.
+            * Like don't hide the toolbar if a submenu is open like subtitles.
     * Add thumbnail preview on hover.
     * Add picture in picture mode?

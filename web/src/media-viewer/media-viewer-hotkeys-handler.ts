@@ -59,12 +59,12 @@ export class MediaViewerHotkeysHandler {
       return;
     }
 
-    window.addEventListener('keydown', this.onKeyDown, { capture: true });
+    window.addEventListener('keydown', this.onKeyDown, false);
     this.isListeningKeyboard = true;
   }
 
   private removeKeyboardListener(): void {
-    document.removeEventListener('keydown', this.onKeyDown);
+    document.removeEventListener('keydown', this.onKeyDown, false);
     this.isListeningKeyboard = false;
   }
 

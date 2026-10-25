@@ -1,5 +1,7 @@
 import { MediaViewerControls } from './media-viewer-controls.js';
 import { isVideoElement } from './media-viewer-shared.js';
+import { VideoPlayer } from '../video-player/video-player';
+import { VideoPlayerSubtitles } from '../video-player/video-player-subtitles';
 
 export class MediaViewerActions {
   private controls: MediaViewerControls;
@@ -8,8 +10,16 @@ export class MediaViewerActions {
     this.controls = controls;
   }
 
+  private getVideoPlayer(): VideoPlayer | null {
+    const videoPlayer = this.controls.mediaViewer.getViewerContentElement();
+    if (videoPlayer?.nodeName !== 'VIDEO-PLAYER') {
+      return null;
+    }
+    return videoPlayer as VideoPlayer;
+  }
+
   private getVideoElement(): HTMLVideoElement | null {
-    const video = this.controls.mediaViewer.getViewerContentElement();
+    const video = (this.controls.mediaViewer.getViewerContentElement() as VideoPlayer)?.video;
     if (!isVideoElement(video)) {
       return null;
     }
@@ -40,17 +50,12 @@ export class MediaViewerActions {
   }
 
   public seekOffset(offsetSeconds: number): void {
-    const video = this.getVideoElement();
-    if (!video) {
+    const videoPlayer = this.getVideoPlayer();
+    if (!videoPlayer) {
       return;
     }
 
-    const time = Math.min(Math.max(video.currentTime + offsetSeconds, 0), video.duration);
-    if (video.fastSeek) {
-      video.fastSeek(time);
-    } else {
-      video.currentTime = time;
-    }
+    videoPlayer.seekOffset(offsetSeconds);
   }
 
   // *************************
@@ -74,9 +79,10 @@ export class MediaViewerActions {
   }
 
   public toggleFullscreen(): void {
-    const video = this.getVideoElement();
-    if (!video) {
+    const videoPlayer = this.getVideoPlayer();
+    if (!videoPlayer) {
       return;
     }
+    videoPlayer.toggleFullscreen();
   }
 }
