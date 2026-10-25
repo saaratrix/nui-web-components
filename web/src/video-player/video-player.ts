@@ -39,7 +39,7 @@ export class VideoPlayer extends HTMLElement {
         
         :host(:fullscreen) {
             display: block;
-            video: 100%;
+            width: 100%;
             height: 100%;
         }
       
@@ -69,7 +69,7 @@ export class VideoPlayer extends HTMLElement {
         
         .video-controls {
             display: flex;
-            justify-content: right;
+            justify-content: flex-end;
             position: absolute;
             box-sizing: border-box;
             width: 100%;

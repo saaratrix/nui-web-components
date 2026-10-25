@@ -68,6 +68,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
         
         h3 {
             margin: 0;
+            line-height:100%;
         }
         
         hr {
@@ -98,6 +99,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
         .languages label {
             display: flex;
             cursor: pointer;
+            line-height: 100%;
         }
         
         .languages label:hover {
@@ -106,14 +108,20 @@ export class VideoPlayerSubtitles extends HTMLElement {
         
         .languages input[type="radio"] {
             display: none;
+            order: 2;
         }
         
         .checkmark {
             visibility: hidden;
+            order: 1;
         }
         
-        .checkmark:has(+ input[name="language"]:checked) {
-            visibility: visible;
+        .label-text {
+            order: 3;
+        }
+        
+        input[name="language"]:checked ~ .checkmark {
+          visibility: visible;
         }
       </style>
       <div class="video-player-subtitles">
@@ -259,6 +267,8 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
     const items = subtitlesCsv.split(delimiter);
     const subtitles: Subtitle[] = [];
+    const defaultLang = 'eng';
+    let defaultSubtitle: Subtitle | undefined;
     for (let i = 0; i < items.length; i += 3) {
       let src = items[i];
       const label = items[i + 1];
@@ -274,16 +284,25 @@ export class VideoPlayerSubtitles extends HTMLElement {
         console.log(`setParsedSubtitlesFromCSV() Could not parse subtitle type from ${type}`);
         return;
       }
-
       subtitles.push({
         src,
         label: label.trim(),
         type,
         srclang: srclang.trim(),
       });
+
+      if (srclang === defaultLang) {
+        defaultSubtitle = subtitles[subtitles.length -1];
+      }
     }
 
     this.parsedSubtitles = subtitles;
+    if (defaultSubtitle && !this.selectedSubtitle) {
+      requestAnimationFrame(() => {
+        !this.selectedSubtitle && void this.changeSubtitle(defaultSubtitle);
+      });
+    }
+
     this.subtitlesDirty = true;
     this.renderSubtitlesList();
   }
@@ -336,9 +355,9 @@ export class VideoPlayerSubtitles extends HTMLElement {
     const checked = this.selectedSubtitle == subtitle;
 
     label.innerHTML = `
+      <input name="language" type="radio" value="${index}">
       <span class="checkmark">✓</span>
-      ${text}
-      <input name="language" type="radio" value="${index}">`;
+      <span class="label-text">${text}</span>`;
 
     const radioButton = label.querySelector('input[type="radio"]') as HTMLInputElement;
     radioButton.checked = checked;

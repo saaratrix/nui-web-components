@@ -105,7 +105,7 @@ export class Popover extends HTMLElement {
             width: var(--arrow-size, 12px);
             height: var(--arrow-size, 12px);
             transform: rotate(45deg);
-            background-color: var(--arrow-color, #eee);
+            background-color: var(--arrow-color, var(--color-bg, #eee));
         }
         
         ${createArrowPopoverCSS('.popover', '.arrow')}
@@ -381,6 +381,7 @@ export class Popover extends HTMLElement {
       document.body.appendChild(portalRoot);
       portalRoot.attachShadow({ mode: 'open' });
       const portalStyle = document.createElement('style');
+      // portalRoot.shadowRoot!.appendChild(portalBaseStyle);
       portalRoot.shadowRoot!.appendChild(portalStyle);
       this.portalStyle = portalStyle;
     }
@@ -418,7 +419,7 @@ export class Popover extends HTMLElement {
     for (let i = 0; i < rules.length; i++) {
       const rule = rules.item(i);
       if (rule) {
-        css += rule.cssText;
+        css += rule.cssText + '\n';
       }
     }
 
@@ -429,13 +430,15 @@ export class Popover extends HTMLElement {
    * If in fullscreen mode we need to attach the portal root element to document.fullScreenElement instead of body.
    */
   private setPortalRootParent(): void {
-    const documentElement = document.fullscreenElement || document.body;
-    if (this.portalRoot!.parentElement !== documentElement) {
-      if (documentElement.shadowRoot) {
-        documentElement.shadowRoot.appendChild(this.portalRoot!);
-      } else {
-        documentElement.appendChild(this.portalRoot!);
-      }
+    let element: Element | ShadowRoot = document.fullscreenElement || document.body;
+    while (element.shadowRoot && element.shadowRoot.fullscreenElement) {
+      element = element.shadowRoot.fullscreenElement;
+    }
+    if (element.shadowRoot) {
+      element = element.shadowRoot;
+    }
+    if (this.portalRoot!.parentElement !== element) {
+      element.appendChild(this.portalRoot!);
     }
   }
 

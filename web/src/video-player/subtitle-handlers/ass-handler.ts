@@ -70,7 +70,6 @@ export class AssHandler implements SubtitleHandler {
         void this.adjustMargin(1);
       }
     });
-
     return true;
   }
 
@@ -106,7 +105,7 @@ export class AssHandler implements SubtitleHandler {
 
       const defaultStyles: SubtitleStyle[] = [];
       for (const style of styles) {
-        if (style.Name === 'Default') {
+        if (style.Name === 'Default' || style.Name === 'Main') {
           defaultStyles.push(style);
         }
       }
