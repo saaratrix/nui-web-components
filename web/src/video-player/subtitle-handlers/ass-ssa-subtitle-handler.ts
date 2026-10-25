@@ -52,12 +52,11 @@ export class AssSsaSubtitleHandler implements SubtitleHandler {
     this.currentOctopus = undefined;
   }
 
-  async changeSubtitle(subtitle: Subtitle): Promise<void> {
+  async changeSubtitle(subtitle: Subtitle): Promise<boolean> {
     const isPlaying = !this.videoElement.paused;
     const loaded = await this.trySetSubtitlesOctopusInstance(isPlaying);
     if (!loaded || !this.currentOctopus) {
-      this.clearSelectedSubtitle();
-      return;
+      return false;
     }
 
     if (subtitle.src) {
@@ -71,6 +70,8 @@ export class AssSsaSubtitleHandler implements SubtitleHandler {
         void this.adjustMargin(1);
       }
     });
+
+    return true;
   }
 
   public clearSelectedSubtitle() {

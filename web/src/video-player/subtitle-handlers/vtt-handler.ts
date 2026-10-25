@@ -13,8 +13,8 @@ export class VttSubtitleHandler implements SubtitleHandler {
   remove(): void {
   }
 
-  changeSubtitle(subtitle: Subtitle): Promise<void> {
-    return Promise.resolve(undefined);
+  changeSubtitle(subtitle: Subtitle): Promise<boolean> {
+    return Promise.resolve(false);
   }
 
   adjustMargin(offsetMultiplier: number): Promise<void> {

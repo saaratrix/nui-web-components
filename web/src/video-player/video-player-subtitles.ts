@@ -376,7 +376,14 @@ export class VideoPlayerSubtitles extends HTMLElement {
       oldSubtitleHandles?.clearSelectedSubtitle();
     }
 
-    void this.activeSubtitleHandler?.changeSubtitle(subtitle);
+    try {
+      const successful = await this.activeSubtitleHandler?.changeSubtitle(subtitle);
+      if (!successful) {
+        this.clearSelectedSubtitle();
+      }
+    } catch (e) {
+      this.clearSelectedSubtitle();
+    }
   }
 
   private onSubtitleAdded(event: CustomEvent<SubtitleAddedEvent>) {
