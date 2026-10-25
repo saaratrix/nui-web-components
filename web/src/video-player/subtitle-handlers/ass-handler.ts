@@ -14,7 +14,7 @@ export interface OctopusSubtitlesOptions {
   octopusDefaultFontUrl: string | undefined;
 }
 
-export class AssSsaSubtitleHandler implements SubtitleHandler {
+export class AssHandler implements SubtitleHandler {
   private readonly videoPlayerSubtitles: VideoPlayerSubtitles;
   public currentOctopus: SubtitlesOctopus | undefined;
 
@@ -89,7 +89,7 @@ export class AssSsaSubtitleHandler implements SubtitleHandler {
     }
 
     for (const style of this.defaultStyles) {
-      const margin = style.MarginV + offsetMultiplier * AssSsaSubtitleHandler.MarginVerticalOffset;
+      const margin = style.MarginV + offsetMultiplier * AssHandler.MarginVerticalOffset;
       style.MarginV = margin;
 
       this.currentOctopus.setStyle({ MarginV: margin, Alignment: 2 }, style._index);

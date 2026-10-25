@@ -2,7 +2,7 @@ import type { Subtitle } from '../video-player.models';
 import type { SubtitleHandler } from './subtitle-handler';
 import type { VideoPlayerSubtitles } from '../video-player-subtitles';
 
-export class SrtSubtitleHandler implements SubtitleHandler {
+export class SrtHandler implements SubtitleHandler {
   private readonly videoPlayerSubtitles: VideoPlayerSubtitles
 
   constructor(videoPlayerSubtitles: VideoPlayerSubtitles) {

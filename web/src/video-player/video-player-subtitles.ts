@@ -7,8 +7,8 @@ import '../popover/popover.js';
 import './video-player-subtitles-adder.js';
 import type { SubtitleAddedEvent, VideoPlayerSubtitlesAdder } from './video-player-subtitles-adder';
 import type { SubtitleHandler } from './subtitle-handlers/subtitle-handler.js';
-import { AssSsaSubtitleHandler, type OctopusSubtitlesOptions } from './subtitle-handlers/ass-ssa-subtitle-handler.js';
-import { SrtSubtitleHandler } from './subtitle-handlers/srt-subtitle-handler.js';
+import { AssHandler, type OctopusSubtitlesOptions } from './subtitle-handlers/ass-handler';
+import { SrtHandler } from './subtitle-handlers/srt-handler';
 import { VttSubtitleHandler } from './subtitle-handlers/vtt-handler.js';
 
 export const subtitlesOptions: OctopusSubtitlesOptions = {
@@ -232,12 +232,12 @@ export class VideoPlayerSubtitles extends HTMLElement {
     switch (type) {
       case SubtitleType.Ass:
       case SubtitleType.Ssa:
-        subtitleHandler = new AssSsaSubtitleHandler(this);
+        subtitleHandler = new AssHandler(this);
         this.subtitleHandlers.set(SubtitleType.Ass, subtitleHandler!);
         this.subtitleHandlers.set(SubtitleType.Ssa, subtitleHandler!);
         break;
       case SubtitleType.Srt:
-        subtitleHandler = new SrtSubtitleHandler(this);
+        subtitleHandler = new SrtHandler(this);
         this.subtitleHandlers.set(SubtitleType.Srt, subtitleHandler!);
         break;
       case SubtitleType.Vtt:
