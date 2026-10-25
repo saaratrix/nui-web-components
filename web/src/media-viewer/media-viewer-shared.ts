@@ -1,4 +1,5 @@
 // TODO: Change that these are using fixed external css variables.
+// language=CSS
 const sharedCSS = `
   .icon-action {
     padding: 5px;

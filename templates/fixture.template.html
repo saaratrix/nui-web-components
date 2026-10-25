@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fixture Name</title>
+  <style>
+  </style>
+</head>
+
+<body>
+  <div>
+    <label>A setting: <input type="checkbox" id="dnd" checked></label>
+  </div>
+  <br>
+  <web-component id="component" ></web-component>
+
+  <script type="module" src="./web-component.template.js"></script>
+  <script type="application/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+      /** @type {} */
+      const component = document.getElementById('component');
+    });
+  </script>
+</body>
+</html>
