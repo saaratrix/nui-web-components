@@ -34,7 +34,7 @@ export class VideoPlayer extends HTMLElement {
             display: inline-flex;
             --icon-size: 40px;
             --icon-size-svg: 22px;
-            --controls-opacity: 1;
+            --controls-opacity: 0;
         }
         
         :host(:fullscreen) {
@@ -74,6 +74,8 @@ export class VideoPlayer extends HTMLElement {
             top: 0;
             padding: 0.25rem 0.5rem;
             opacity: var(--controls-opacity);
+            
+            transition: opacity 0.15s ease-in-out;
         }     
         
         .controls-group {
@@ -108,6 +110,9 @@ export class VideoPlayer extends HTMLElement {
     this.container.addEventListener('click', this.onVideoContainerClick, false);
     this.container.addEventListener('dblclick', this.onVideoContainerDblClick, false);
     this.addEventListener('fullscreenchange', this.onFullscreenChanged, false);
+
+    this.videoControls.addEventListener('pointermove', this.onPointerMove, false);
+    this.videoControls.addEventListener('pointerleave', this.onPointerLeave, false);
 
     this.fullscreenButton.addEventListener('click', this.onFullscreenButtonClick, false);
 
@@ -247,6 +252,25 @@ export class VideoPlayer extends HTMLElement {
         break;
     }
   }
+
+  toolbarTimeoutId = -1;
+  private onPointerMove = () => {
+    if (this.toolbarTimeoutId === -1) {
+        this.style.setProperty('--controls-opacity', '1');
+      } else {
+        clearTimeout(this.toolbarTimeoutId);
+      }
+      this.toolbarTimeoutId = setTimeout(() => {
+        this.style.setProperty('--controls-opacity', '0');
+        this.toolbarTimeoutId = -1;
+      }, 2000);
+  };
+
+  private onPointerLeave = () => {
+    clearTimeout(this.toolbarTimeoutId);
+    this.toolbarTimeoutId = -1;
+    this.style.setProperty('--controls-opacity', '0');
+  };
 
   private isClickAllowed(event: MouseEvent): boolean {
      return (this.video.offsetHeight - event.clientY) >= 64 && !(event.target as HTMLElement).closest('.action');

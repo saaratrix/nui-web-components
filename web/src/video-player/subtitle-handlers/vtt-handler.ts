@@ -1,5 +1,5 @@
 import type { Subtitle } from '../video-player.models';
-import  { VideoPlayerSubtitles } from '../video-player-subtitles';
+import type { VideoPlayerSubtitles } from '../video-player-subtitles';
 import type { SubtitleHandler } from './subtitle-handler';
 
 export class VttSubtitleHandler implements SubtitleHandler {

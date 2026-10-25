@@ -7,8 +7,8 @@ import '../popover/popover.js';
 import './video-player-subtitles-adder.js';
 import type { SubtitleAddedEvent, VideoPlayerSubtitlesAdder } from './video-player-subtitles-adder';
 import type { SubtitleHandler } from './subtitle-handlers/subtitle-handler.js';
-import { AssHandler, type OctopusSubtitlesOptions } from './subtitle-handlers/ass-handler';
-import { SrtHandler } from './subtitle-handlers/srt-handler';
+import { AssHandler, type OctopusSubtitlesOptions } from './subtitle-handlers/ass-handler.js';
+import { SrtHandler } from './subtitle-handlers/srt-handler.js';
 import { VttSubtitleHandler } from './subtitle-handlers/vtt-handler.js';
 
 export const subtitlesOptions: OctopusSubtitlesOptions = {

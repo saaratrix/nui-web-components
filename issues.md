@@ -20,5 +20,8 @@ Budget jira board!
         * Progress bar
         * Mute button
         * Volume bar
+    * Improve controls opacity behaviour:
+        * If paused always show
+        * Move into web component and just improve the logic a bit with opacity.
     * Add thumbnail preview on hover.
     * Add picture in picture mode?
