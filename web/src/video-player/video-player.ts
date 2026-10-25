@@ -132,6 +132,10 @@ export class VideoPlayer extends HTMLElement {
     }
   }
 
+  disconnectedCallback() {
+    this.clearPlaybackToggleTimeout();
+  }
+
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
     if (oldValue === newValue) {
       return;
