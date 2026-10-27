@@ -14,12 +14,21 @@
         justify-content: center;
         align-items: center;
     }
+
+    .setting {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
   </style>
 </head>
 
 <body>
-  <div>
-    <label>A setting: <input type="checkbox" id="dnd" checked></label>
+  <div class="settings">
+    <div class="setting">
+      <label>A setting: <input type="checkbox" id="dnd" checked></label>
+    </div>
+
   </div>
   <br>
   <web-component id="component" ></web-component>
