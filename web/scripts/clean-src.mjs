@@ -16,6 +16,9 @@ const directories = [
 
 const excludedFiles = [
   // "keep-me.js",
+  "subtitles-octopus.js",
+  "subtitles-octopus-worker.js",
+  "subtitles-octopus-worker-legacy.js",
 ];
 
 for (const directory of directories) {

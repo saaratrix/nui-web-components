@@ -16,10 +16,11 @@ However, for example icons have a .ts file with the svg icons as strings so each
 What good would web components be without being able to show them off! 
 
 * drag-and-drop
-* [file-picker](src/file-picker/file-picker.fixture.html)
-* [media-viewer](src/media-viewer/media-viewer.fixture.html)
-* [popover](src/popover/popover.fixture.html)
-* [progress-bar](src/progress-bar/progress-bar.fixture.html)
-* [progress-status](src/progress-status/progress-status.fixture.html)
-* [rating](src/rating/rating.fixture.html)
-* [video-player](src/video-player/video-player.fixture.html)
+* [file-picker](https://saaratrix.github.io/nui-web-components/web/src/file-picker/file-picker.fixture.html)
+* [media-viewer](https://saaratrix.github.io/nui-web-components/web/src/media-viewer/media-viewer.fixture.html)
+* [pagination-indicator](https://saaratrix.github.io/nui-web-components/web/src/pagination-indicator/pagination-indicator.fixture.html)
+* [popover](https://saaratrix.github.io/nui-web-components/web/src/popover/popover.fixture.html)
+* [progress-bar](https://saaratrix.github.io/nui-web-components/web/src/progress-bar/progress-bar.fixture.html)
+* [progress-status](https://saaratrix.github.io/nui-web-components/web/src/progress-status/progress-status.fixture.html)
+* [rating](https://saaratrix.github.io/nui-web-components/web/src/rating/rating.fixture.html)
+* [video-player](https://saaratrix.github.io/nui-web-components/web/src/video-player/video-player.fixture.html)

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fixture Name</title>
+  <style>
+    body {
+        background-color: #2c2c38;
+        color: #e1e1e8;
+        min-height: 100dvh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .setting {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    pagination-indicator {
+      width: min(100%, 200px);
+      --size: 1.5rem;
+    }
+
+    pagination-indicator::part(indicator) {
+      cursor: pointer;
+    }
+
+    pagination-indicator::part(active) {
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <div class="setting">
+      Indicators <span class="indicators-count">4</span> <input id="indicators" type="range" min="1" max="20" value="1" step="1" />
+    </div>
+    |
+    <div class="setting">
+      Progress <span class="progress-count">0.00 (0.00)</span>: <input id="progress" type="range" min="0" max="100" value="0" step="1" />
+    </div>
+
+    <div class="setting">
+      Size (rem): <input id="size" type="number" min="0.5" max="10" step="0.25" value="1.5" />
+    </div>
+    <div class="setting">
+      Clickable: <input id="clickable" type="checkbox" checked />
+    </div>
+    <br>
+    <div class="setting">
+         Colour: <input id="color" type="color" value="#ffc0cb" />
+    </div>
+    <div class="setting">
+         Active Colour: <input id="active-color" type="color" value="#ff1493" />
+    </div>
+
+  </div>
+  <br>
+  <pagination-indicator id="component" indicators="4" clickable style="color: #ffc0cb; --color-active: #ff1493;"></pagination-indicator>
+
+  <script type="module" src="./pagination-indicator.js" ></script>
+  <script type="application/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+      /** @type {PaginationIndicator} */
+      const component = document.getElementById('component');
+
+      /** @type {HTMLInputElement} */
+      const indicators = document.getElementById('indicators');
+      const indicatorsCount = document.querySelector('.indicators-count');
+
+      indicators.addEventListener('input', () => {
+        const value = indicators.value;
+        indicatorsCount.textContent = value;
+        component.setAttribute('indicators', value.toString());
+      });
+
+
+      component.addEventListener('indicatorClick', (event) => {
+        if (event.detail.index !== -1) {
+          component.setAttribute('progress', event.detail.index.toString());
+        }
+      })
+
+      /** @type {HTMLInputElement} */
+      const progress = document.getElementById('progress');
+      const progressCount = document.querySelector('.progress-count');
+      progress.addEventListener('input', () => {
+        const value = (progress.value / 100) * (component.indicators - 1);
+        progressCount.textContent = `${value.toFixed(2)} (${(progress.value / 100).toFixed(2)})`;
+        component.setAttribute('progress', value.toString());
+      });
+
+      /** @type {HTMLInputElement} */
+      const size = document.getElementById('size');
+      size.addEventListener('input', () => {
+        component.style.setProperty('--size', `${size.value}rem`);
+        component.updateSize();
+      });
+
+      /** @type {HTMLInputElement} */
+      const clickable = document.getElementById('clickable');
+      clickable.addEventListener('input', () => {
+        clickable.checked ? component.setAttribute('clickable', '') : component.removeAttribute('clickable');
+      });
+
+      /** @type {HTMLInputElement} */
+      const colour = document.getElementById('color');
+      colour.addEventListener('input', () => {
+        component.style.color = colour.value;
+      });
+
+      /** @type {HTMLInputElement} */
+      const activeColour = document.getElementById('active-color');
+      activeColour.addEventListener('input', () => {
+        component.style.setProperty('--color-active', activeColour.value);
+      });
+    });
+  </script>
+</body>
+</html>
