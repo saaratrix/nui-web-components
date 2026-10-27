@@ -49,17 +49,20 @@
     <div class="setting">
       Size (rem): <input id="size" type="number" min="0.5" max="10" step="0.25" value="1.5" />
     </div>
+    <div class="setting">
+      Clickable: <input id="clickable" type="checkbox" checked />
+    </div>
     <br>
     <div class="setting">
-         Colour: <input id="color" type="color" />
+         Colour: <input id="color" type="color" value="#ffc0cb" />
     </div>
     <div class="setting">
-         Active Colour: <input id="active-color" type="color" />
+         Active Colour: <input id="active-color" type="color" value="#ff1493" />
     </div>
 
   </div>
   <br>
-  <pagination-indicator id="component" indicators="4"></pagination-indicator>
+  <pagination-indicator id="component" indicators="4" clickable style="color: #ffc0cb; --color-active: #ff1493;"></pagination-indicator>
 
   <script type="module" src="./pagination-indicator.js" ></script>
   <script type="application/javascript">
@@ -75,23 +78,14 @@
         const value = indicators.value;
         indicatorsCount.textContent = value;
         component.setAttribute('indicators', value.toString());
-        addClickability();
       });
-      addClickability();
 
-      function addClickability() {
-        const indicators = component.shadowRoot.querySelectorAll('.indicator');
-        for (let i = 0; i < indicators.length; i++) {
-          const indicator = indicators[i];
-          if (indicator.classList.contains('active')) {
-            continue;
-          }
 
-          indicator.addEventListener('click', () => {
-            component.setAttribute('progress', (i).toString());
-          });
+      component.addEventListener('indicatorClick', (event) => {
+        if (event.detail.index !== -1) {
+          component.setAttribute('progress', event.detail.index.toString());
         }
-      }
+      })
 
       /** @type {HTMLInputElement} */
       const progress = document.getElementById('progress');
@@ -106,12 +100,19 @@
       const size = document.getElementById('size');
       size.addEventListener('input', () => {
         component.style.setProperty('--size', `${size.value}rem`);
+        component.updateSize();
+      });
+
+      /** @type {HTMLInputElement} */
+      const clickable = document.getElementById('clickable');
+      clickable.addEventListener('input', () => {
+        clickable.checked ? component.setAttribute('clickable', '') : component.removeAttribute('clickable');
       });
 
       /** @type {HTMLInputElement} */
       const colour = document.getElementById('color');
       colour.addEventListener('input', () => {
-        component.style.setProperty('--color', colour.value);
+        component.style.color = colour.value;
       });
 
       /** @type {HTMLInputElement} */
