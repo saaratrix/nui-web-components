@@ -208,7 +208,7 @@ export class Popover extends HTMLElement {
         positionPopover(this.popoverContainer, anchor, {
             arrow: this.showArrow ? this.arrow : null,
         });
-        this.dispatchEvent(new CustomEvent('popover:show', {
+        this.dispatchEvent(new CustomEvent('popoverShow', {
             bubbles: true,
             composed: true,
         }));
@@ -221,7 +221,7 @@ export class Popover extends HTMLElement {
         this.removeEvent(document, 'click');
         this.addSelfBackToParent();
         this.popoverContainer.hidden = true;
-        this.dispatchEvent(new CustomEvent('popover:hide', {
+        this.dispatchEvent(new CustomEvent('popoverHide', {
             bubbles: true,
             composed: true,
         }));
