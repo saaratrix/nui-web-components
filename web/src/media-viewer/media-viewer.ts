@@ -328,7 +328,7 @@ export class MediaViewer extends HTMLElement {
   renderSubtitles(): string {
       const subtitlesValue = this.getAttribute('subtitles');
       if (subtitlesValue) {
-        return `subtitles=${subtitlesValue} `;
+        return `subtitles="${subtitlesValue}"`;
       } else {
         return '';
       }

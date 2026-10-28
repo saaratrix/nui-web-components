@@ -26,3 +26,8 @@ Budget jira board!
             * Like don't hide the toolbar if a submenu is open like subtitles.
     * Add thumbnail preview on hover.
     * Add picture in picture mode?
+    
+* Pagination indicator:
+    * Indicator options so it's not all just balls.
+    * Metaballs:
+        * Change shape of the ball that moves to make it more alive.
