@@ -36,16 +36,18 @@ export interface PaginationIndicator {
  * ::part(active) - the active indicator.
  */
 export class PaginationIndicator extends HTMLElement {
-  static observedAttributes = ['indicators', 'progress', 'clickable'];
+  static observedAttributes = ['indicators', 'progress', 'clickable', 'no-animation'];
 
   shadow: ShadowRoot;
 
-  private pagination: HTMLElement;
-  private readonly activeIndicator: HTMLElement;
+  public pagination: HTMLElement;
+  public readonly activeIndicator: HTMLElement;
 
   public indicators: number = 0;
   // 0 index based!
   public progress: number = 0;
+
+  private resizeObserver: ResizeObserver | null = null;
 
   // metaballs source: https://css-tricks.com/gooey-effect/
   constructor() {
@@ -97,10 +99,14 @@ export class PaginationIndicator extends HTMLElement {
         transform: translateX(var(--progress, 0px));
       }
       
+      .skip-animation {
+        transition: none !important;
+      }
+      
       </style>
       <div class="container metaballs">
         <div class="pagination" part="pagination"></div>
-        <div class="active-layer">
+        <div class="active-layer skip-animation">
           <div class="indicator indicator-circle active" part="indicator active"></div>
         </div>
       </div>
@@ -134,9 +140,26 @@ export class PaginationIndicator extends HTMLElement {
   }
 
   connectedCallback() {
-    this.updateSize();
+    this.resizeObserver = new ResizeObserver(() => {
+      const hasAnimation = !this.activeIndicator.classList.contains('skip-animation');
+      this.setAnimationEnabled(false);
 
+      this.updateSize();
+      this.setProgress(this.progress.toString());
+      if (hasAnimation) {
+        this.setAnimationEnabled(true);
+      }
+    });
+    this.resizeObserver.observe(this.activeIndicator);
+    this.resizeObserver.observe(this.pagination);
+
+    this.updateSize();
     this.renderIndicators();
+  }
+
+  disconnectedCallback() {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
@@ -156,6 +179,8 @@ export class PaginationIndicator extends HTMLElement {
           ? indicator.addEventListener('click', this.onClick, false)
           : indicator.removeEventListener('click', this.onClick, false);
       }
+    } else if (name === 'no-animation') {
+      this.activeIndicator.classList.toggle('skip-animation', !this.canAnimate);
     }
   }
 
@@ -163,9 +188,22 @@ export class PaginationIndicator extends HTMLElement {
     return this.hasAttribute('clickable');
   }
 
+  private get canAnimate(): boolean {
+    return !this.hasAttribute('no-animation');
+  }
+
   private setIndicators(value: string | null): void {
     this.indicators = Math.max(this.parseAttributeValue(value, parseInt), 0);
     this.style.setProperty('--indicators', this.indicators.toString());
+  }
+
+  public setAnimationEnabled(isEnabled: boolean): void {
+    if (!this.canAnimate) {
+      return;
+    }
+    // Need to force a css flush/repaint before we set the css or it might not properly skip the transition.
+    const width = this.offsetHeight;
+    this.activeIndicator.classList.toggle('skip-animation', !isEnabled);
   }
 
   // Note: Could use resizeObservable but seems overkill for pagination...
@@ -193,8 +231,9 @@ export class PaginationIndicator extends HTMLElement {
 
     // If we for example have 4 indicators, then 2nd one is at ~33%, 3rd at 67% and last one at 100%
     // However for example if it's 200 px wide and the circle is 8px big the position is at 192px since pivot is left side.
-    const paginationWidth = this.pagination.offsetWidth;
-    const circleWidth = this.activeIndicator.offsetWidth;
+    const paginationWidth = this.pagination.getBoundingClientRect().width;
+    const circleWidth = this.activeIndicator.getBoundingClientRect().width;
+
     const end = paginationWidth - circleWidth;
 
     const normalizedProgress = progress / (this.indicators - 1);

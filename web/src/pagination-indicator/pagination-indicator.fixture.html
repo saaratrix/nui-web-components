@@ -59,10 +59,13 @@
     <div class="setting">
          Active Colour: <input id="active-color" type="color" value="#ff1493" />
     </div>
+    <div class="setting">
+      Animate: <input id="animate" type="checkbox" checked />
+    </div>
 
   </div>
   <br>
-  <pagination-indicator id="component" indicators="4" clickable style="color: #ffc0cb; --color-active: #ff1493;"></pagination-indicator>
+  <pagination-indicator id="component" indicators="4" clickable style="color: #ffc0cb; --color-active: #ff1493;" progress="2"></pagination-indicator>
 
   <script type="module" src="./pagination-indicator.js" ></script>
   <script type="application/javascript">
@@ -120,6 +123,12 @@
       activeColour.addEventListener('input', () => {
         component.style.setProperty('--color-active', activeColour.value);
       });
+
+      /** @type {HTMLInputElement} */
+      const animate = document.getElementById('animate');
+      animate.addEventListener('input', () => {
+        component.toggleAttribute('no-animation', !animate.checked);
+      })
     });
   </script>
 </body>
