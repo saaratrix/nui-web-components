@@ -244,6 +244,10 @@ export class PaginationIndicator extends HTMLElement {
     let index = parseInt((event.currentTarget as HTMLElement | null)?.dataset['index'] as string);
     index = !Number.isNaN(index) ? index : -1;
 
+    if (this.progress === index) {
+      return;
+    }
+
     this.dispatchEvent(new CustomEvent<IndicatorClickEvent>('indicatorClick', { detail: { index, originalEvent: event }, composed: true, bubbles: true }));
   }
 
