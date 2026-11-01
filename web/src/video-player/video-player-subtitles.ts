@@ -280,9 +280,9 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
       src = src.trim();
       const type = getSubtitleTypeFromName(src);
-      if (!type) {
-        console.log(`setParsedSubtitlesFromCSV() Could not parse subtitle type from ${type}`);
-        return;
+      if (type === undefined) {
+        console.log(`setParsedSubtitlesFromCSV() Could not parse subtitle type from ${type} - ${src}`);
+        continue;
       }
       subtitles.push({
         src,

@@ -19,7 +19,7 @@ export function getSubtitleTypeFromName(name: string): SubtitleType | undefined 
       case 'vtt':
         return SubtitleType.Vtt;
       default:
-        return;
+        return undefined;
     }
 }
 

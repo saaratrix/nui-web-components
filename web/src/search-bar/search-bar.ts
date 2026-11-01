@@ -1,6 +1,11 @@
 import '../popover/popover.js';
 import type { Popover } from '../popover/popover';
 
+export interface SearchChangeEvent {
+  value: string;
+  originalEvent: Event;
+}
+
 /**
  * Parts:
  * ::part(search-bar) - The search bar container.
@@ -155,7 +160,7 @@ export class SearchBar extends HTMLElement {
   }
 
   onInput = (event: Event) => {
-    this.dispatchEvent(new CustomEvent('change', {
+    this.dispatchEvent(new CustomEvent<SearchChangeEvent>('change', {
       composed: true,
       detail: {
         value: this.input.value,
