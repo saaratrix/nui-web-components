@@ -8,9 +8,9 @@ interface AddedEvent {
 
 enum PopoverTrigger {
   Click,
-  Hover
+  Hover,
+  Manual,
 }
-
 
 export interface PortalHTMLElement extends HTMLElement {
   __contentReference?: unknown;
@@ -35,8 +35,24 @@ export interface Popover {
   ): void;
 }
 
+export enum SizeMode {
+  Manual,
+  Anchor
+}
+
+/**
+ * Attributes:
+ * pin: If the popover is pinned if the anchor element is clicked.
+ * disabled: If the popover is disabled
+ * hide-arrow: Arrow is on by default, so hide-arrow hides it.
+ * trigger: How the popover is automatically triggered
+ *
+ * Parts:
+ * ::part(popover)
+ * ::part(content)
+ */
 export class Popover extends HTMLElement {
-  static observedAttributes = ['pin', 'disabled', 'hide-arrow', 'trigger'];
+  static observedAttributes = ['pin', 'disabled', 'hide-arrow', 'trigger', 'portal', 'size'];
 
   shadow: ShadowRoot;
   private popoverContainer: HTMLElement;
@@ -44,7 +60,7 @@ export class Popover extends HTMLElement {
   private content: HTMLSlotElement;
   private events: AddedEvent[] = [];
 
-  private isVisible = false;
+  public isVisible = false;
   public storedParentElement: Node | null = null;
   private currentAnchor: HTMLElement | null = null;
   private isPinned: boolean = false;
@@ -112,10 +128,10 @@ export class Popover extends HTMLElement {
         
       </style>
       
-      <div class="popover" hidden>
+      <div class="popover" part="popover" hidden>
         <div class="arrow"></div>
-        <div class="content-container">
-            <div class="content">
+        <div class="content-container" p>
+            <div class="content" part="content">
                 <slot name="content"></slot>
             </div>
         </div>
@@ -175,17 +191,30 @@ export class Popover extends HTMLElement {
     return !this.hasAttribute('hide-arrow');
   }
 
+  private getWidthSettings(): { maxWidth: number, hasMaxWidth: boolean } {
+    const containerStyle = getComputedStyle(this);
+
+    const maxWidth = parseFloat(containerStyle.maxWidth);
+
+    return {
+      maxWidth,
+      hasMaxWidth: !Number.isNaN(maxWidth),
+    }
+  }
+
   public get trigger(): PopoverTrigger {
     const trigger = this.getAttribute('trigger') ?? '';
     switch (trigger.toLowerCase()) {
       case 'click':
         return PopoverTrigger.Click;
+      case 'manual':
+        return PopoverTrigger.Manual;
       default:
         return PopoverTrigger.Hover;
     }
   }
 
-  public set trigger(value: string | null) {
+  public set trigger(value: 'click' | 'hover' | 'manual' | null) {
     if (!value) {
       this.removeAttribute('trigger');
       return;
@@ -196,16 +225,33 @@ export class Popover extends HTMLElement {
       case 'click':
         trigger = 'click';
         break;
+      case 'manual':
+        trigger = 'manual';
+        break;
     }
 
     this.setAttribute('trigger', trigger);
+  }
+
+  public get usePortal(): boolean {
+    return this.hasAttribute('portal');
+  }
+
+  public get sizeMode(): SizeMode {
+    const value = this.getAttribute('size') || '';
+    switch (value.toLowerCase()) {
+      case 'anchor':
+        return SizeMode.Anchor;
+    }
+
+    return SizeMode.Manual
   }
 
   private tryGetAnchor(): HTMLElement | null {
     return this.currentAnchor || this.parentElement;
   }
 
-  setAnchor(anchor: HTMLElement | null) {
+  setAnchor(anchor: HTMLElement | null, excludeEvents: boolean = false) {
     if (anchor === this.currentAnchor) {
       return;
     }
@@ -213,7 +259,13 @@ export class Popover extends HTMLElement {
     this.removeEvents();
     this.currentAnchor = anchor;
 
-    if (!anchor) {
+    if (!anchor ) {
+      return;
+    }
+    // Resize event we always want, although
+    this.addEvent(window, 'resize', () => this.onWindowResize(), { passive: true });
+
+    if (excludeEvents) {
       return;
     }
 
@@ -223,7 +275,6 @@ export class Popover extends HTMLElement {
 
     this.addEvent(anchor, 'pointerenter', () => this.onAnchorPointerEnter());
     this.addEvent(anchor, 'pointerleave', () => this.onAnchorPointerLeave());
-    this.addEvent(window, 'resize', () => this.onWindowResize());
   }
 
   private addEvent(element: Node | Window, type: string, method: (event: Event) => void, options?: boolean | AddEventListenerOptions) {
@@ -265,7 +316,17 @@ export class Popover extends HTMLElement {
     this.isVisible = true;
     this.popoverContainer.hidden = false;
 
-    this.addSelfToPortalRoot();
+    if (this.sizeMode === SizeMode.Anchor) {
+      const widthSettings = this.getWidthSettings();
+      const anchorBounds = anchor.getBoundingClientRect();
+      const maxWidth = widthSettings.hasMaxWidth ? widthSettings.maxWidth : anchorBounds.width;
+      const contentBounds = this.popoverContainer.getBoundingClientRect();
+      this.popoverContainer.style.width = `${Math.min(contentBounds.width, maxWidth)}px`;
+    }
+
+    if (this.usePortal) {
+      this.addSelfToPortalRoot();
+    }
 
     positionPopover(this.popoverContainer, anchor, {
       arrow: this.showArrow ? this.arrow : null,
@@ -283,7 +344,14 @@ export class Popover extends HTMLElement {
 
     this.isVisible = false;
     this.removeEvent(document, 'click');
-    this.addSelfBackToParent();
+    if (this.usePortal) {
+      this.addSelfBackToParent();
+    }
+
+    if (this.sizeMode === SizeMode.Anchor) {
+      this.popoverContainer.style.width = '';
+    }
+
     this.popoverContainer.hidden = true;
     this.dispatchEvent(new CustomEvent('popoverHide', {
       bubbles: true,
@@ -298,9 +366,7 @@ export class Popover extends HTMLElement {
 
     this.isPinned = !this.isPinned;
     if (this.isPinned) {
-      setTimeout(() => {
-        this.addEvent(document, 'click', (event) => this.onOutsideClick(event as PointerEvent));
-      });
+      this.addOutsideClickEvent();
     }
 
     if (!this.isHoverAllowed()) {
@@ -308,9 +374,15 @@ export class Popover extends HTMLElement {
     }
   }
 
+  public addOutsideClickEvent(): void {
+    setTimeout(() => {
+      this.addEvent(document, 'click', (event) => this.onOutsideClick(event as PointerEvent));
+    });
+  }
+
   private onOutsideClick = (event: PointerEvent) => {
     const composedPath = event.composedPath();
-    if (composedPath.indexOf(this.popoverContainer) !== -1) {
+    if (composedPath.indexOf(this.popoverContainer) !== -1 || this.currentAnchor?.contains(composedPath[0] as Node)) {
       return;
     }
 
@@ -398,6 +470,9 @@ export class Popover extends HTMLElement {
     if (!(rootNode instanceof ShadowRoot) && !(rootNode instanceof Document)) {
       return;
     }
+
+    const color = getComputedStyle(this.popoverContainer).color;
+    this.portalRoot!.style.color = color;
 
     let popoverStyle: CSSStyleSheet | undefined;
     for (let i = 0; i < rootNode.styleSheets.length; i++) {

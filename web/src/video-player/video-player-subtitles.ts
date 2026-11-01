@@ -127,7 +127,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
       <div class="video-player-subtitles">
         <i class="icon icon-subtitles">${subtitleIcon}</i>
       </div>
-      <nui-popover class="config-popover" trigger="click">
+      <nui-popover class="config-popover" trigger="click" portal>
         <div class="subtitles-config" slot="content">
             <div class="header">
                 <h3>Subtitles</h3>

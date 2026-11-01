@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fixture Name</title>
+  <style>
+    body {
+        background-color: #2c2c38;
+        color: #e1e1e8;
+        min-height: 100dvh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .setting {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    search-bar {
+      font-size: 1.5em;
+    }
+
+    search-bar::part(popover) {
+      background-color: pink;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="settings">
+    <div class="setting">
+      <label>Color: <input type="color" id="color" value="#000000"></label>
+      |
+      <label>Text: <input type="color" id="text-color" value="#000000"></label>
+      |
+      <label>Background: <input type="color" id="bg" value="#000000"></label>
+    </div>
+
+  </div>
+  <br>
+  <search-bar id="component" style="color: #000000;"></search-bar>
+
+  <script type="module" src="./search-bar.js"></script>
+  <script type="application/javascript">
+    const games = [
+      { title: 'Heroes of Might and Magic 3', description: 'Pretty decent game.', },
+      { title: 'Heroes of Might and Magic 4', description: 'Not as decent game as HoMM 3' },
+      { title: 'Heroes of Might and Magic: Olden Era', description: 'Also decent game' },
+      { title: 'Super Monkey Ball', description: 'Pretty decent, but hard game.', },
+      { title: 'Super Mario Ball', description: 'Does this game even exist?', },
+      { title: 'Monkey Island', description: 'It is rubber, you are glue.', },
+      { title: 'VVVVV', description: 'VVVVV.' },
+      { title: 'Slay the Princess', description: 'Would you? I failed.' },
+      { title: 'Touhou Kinjoukyou - Fossilized Wonders', description: 'Surprise Touhou.'}
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      /** @type {SearchBar} */
+      const component = document.getElementById('component');
+      component.addEventListener('change', (event) => {
+        const search = event.detail.value;
+
+        const titles = search.length > 0 ? games.filter(g => g.title.toLowerCase().includes(search.toLowerCase())) : [];
+        const elements = titles.map(t => {
+          const element = document.createElement('div');
+          element.classList.add('search-item');
+          element.innerHTML = `${t.title} - ${t.description}`;
+          return element;
+        });
+
+        component.clearSearchResult();
+        component.addSearchResult(...elements);
+
+        if (elements.length > 0) {
+          component.showSearchResult();
+        } else {
+          component.hideSearchResult();
+        }
+      });
+
+      /** @type {HTMLInputElement} */
+      const color = document.getElementById('color');
+      color.addEventListener('input', () => {
+        component.style.color = color.value;
+      });
+
+      /** @type {HTMLInputElement} */
+      const textColor = document.getElementById('text-color');
+      textColor.addEventListener('input', () => {
+        component.style.setProperty('--color-text', textColor.value);
+      });
+
+      /** @type {HTMLInputElement} */
+      const bg = document.getElementById('bg');
+      bg.addEventListener('input', () => {
+        component.style.backgroundColor = bg.value;
+      });
+    });
+  </script>
+</body>
+</html>
