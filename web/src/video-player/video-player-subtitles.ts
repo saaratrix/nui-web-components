@@ -134,7 +134,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
                 <hr>
             </div>
             <div class="group">
-                <button class="margin-button">Meow!</button>
+                <button class="margin-button" disabled>Meow!</button>
                 <video-player-subtitles-adder />
             </div>
             <hr>
@@ -158,8 +158,14 @@ export class VideoPlayerSubtitles extends HTMLElement {
 
     this.addEventListener('subtitleChanged', (event) => {
       for (const [subtitle, element] of this.languageRadioElements.entries()) {
-        element.checked = (event as CustomEvent<Subtitle | undefined>).detail == subtitle;
+        element.checked = (event as CustomEvent<Subtitle | undefined>).detail === subtitle;
       }
+
+      this.marginToggleButton.disabled = !this.activeSubtitleHandler?.canAdjustMargin();
+    });
+
+    this.addEventListener('subtitleChangeLoad', (event) => {
+      this.marginToggleButton.disabled = !this.activeSubtitleHandler?.canAdjustMargin();
     });
   }
 

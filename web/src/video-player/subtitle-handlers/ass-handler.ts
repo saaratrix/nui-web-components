@@ -69,6 +69,8 @@ export class AssHandler implements SubtitleHandler {
       if (this.videoPlayerSubtitles.isMarginOffsetActive() && this.defaultStyles.length > 0) {
         void this.adjustMargin(1);
       }
+
+      this.videoPlayerSubtitles.dispatchEvent(new CustomEvent('subtitleChangeLoad'));
     });
     return true;
   }
