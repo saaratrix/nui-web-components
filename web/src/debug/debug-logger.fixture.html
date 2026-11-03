@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <p>
+        <button id="log">Console.log()</button>
+        <button id="warn">Console.warn()</button>
+        <button id="error">Console.error()</button>
+        <button id="win-error">throw an exception</button>
+    </p>
+    <br>
+    <br>
+    <debug-logger></debug-logger>
+
+    <script src="./debug-logger.js" type="module"></script>
+    <script>
+        const logButton = document.getElementById('log');
+        const warnButton = document.getElementById('warn');
+        const errorButton = document.getElementById('error');
+        const winButton = document.getElementById('win-error');
+
+        logButton.addEventListener('click', () => console.log('log clicked'));
+        warnButton.addEventListener('click', () => console.warn('warning clicked'));
+        errorButton.addEventListener('click', () => console.error('error clicked'));
+        winButton.addEventListener('click', () => {
+          throw new Error('error thrown');
+        });
+    </script>
+</body>
+</html>

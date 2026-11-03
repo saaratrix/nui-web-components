@@ -11,7 +11,10 @@ Budget jira board!
         * Change "Languages" to just Subtitles, including classes etc.
         * Style the subtitles config menu.
         * Add text offset setting?
-        * Add VTT support, 
+            * A fixed value, not offset of say 0, 50, 100, 150, 200
+            * +- 10 intervals or so as well.
+            * Style selector as Default|Main might not exist.
+        * Add VTT support,
         * Add SRT support.
         * Add extension for subtitles picker to use an api to get available subtitles instead, eg media server.
         * Add extension for subtitleAdded, eg might want to upload file if added.
@@ -26,7 +29,7 @@ Budget jira board!
             * Like don't hide the toolbar if a submenu is open like subtitles.
     * Add thumbnail preview on hover.
     * Add picture in picture mode?
-    
+
 * Pagination indicator:
     * Indicator options so it's not all just balls.
     * Metaballs:
