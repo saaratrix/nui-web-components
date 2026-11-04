@@ -16,8 +16,7 @@ export class SrtHandler implements SubtitleHandler {
     return Promise.resolve(false);
   }
 
-  adjustMargin(offsetMultiplier: number): Promise<void> {
-    return Promise.resolve(undefined);
+  adjustMargin(_: number) {
   }
 
   canAdjustMargin(): boolean {

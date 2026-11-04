@@ -185,10 +185,10 @@ export class VideoPlayerSubtitles extends HTMLElement {
       const isCurrentlyActive = this.isMarginOffsetActive();
       if (isCurrentlyActive) {
         delete this.marginToggleButton.dataset['active'];
-        void this.adjustMargin(-1);
+        this.adjustMargin(-1);
       } else {
         this.marginToggleButton.dataset['active'] = 'true';
-        void this.adjustMargin(1);
+        this.adjustMargin(1);
       }
 
       try {
@@ -444,7 +444,7 @@ export class VideoPlayerSubtitles extends HTMLElement {
     return false;
   }
 
-  public async adjustMargin(offsetMultiplier: number): Promise<void> {
+  public adjustMargin(offsetMultiplier: number) {
     if (!this.activeSubtitleHandler) {
       return;
     }

@@ -17,8 +17,8 @@ export class VttSubtitleHandler implements SubtitleHandler {
     return Promise.resolve(false);
   }
 
-  adjustMargin(offsetMultiplier: number): Promise<void> {
-    return Promise.resolve(undefined);
+  adjustMargin(_: number) {
+    return;
   }
 
   canAdjustMargin(): boolean {

@@ -67,7 +67,7 @@ export class AssHandler implements SubtitleHandler {
 
     this.fetchDefaultStyle(() => {
       if (this.videoPlayerSubtitles.isMarginOffsetActive() && this.defaultStyles.length > 0) {
-        void this.adjustMargin(1);
+        this.adjustMargin(1);
       }
 
       this.videoPlayerSubtitles.dispatchEvent(new CustomEvent('subtitleChangeLoad'));
@@ -84,7 +84,7 @@ export class AssHandler implements SubtitleHandler {
     return this.defaultStyles.length > 0;
   }
 
-  async adjustMargin(offsetMultiplier: number): Promise<void> {
+  adjustMargin(offsetMultiplier: number) {
     if (!this.currentOctopus) {
       return;
     }
@@ -92,7 +92,6 @@ export class AssHandler implements SubtitleHandler {
     for (const style of this.defaultStyles) {
       const margin = style.MarginV + offsetMultiplier * AssHandler.MarginVerticalOffset;
       style.MarginV = margin;
-
       this.currentOctopus.setStyle({ MarginV: margin, Alignment: 2 }, style._index);
     }
   }

@@ -6,5 +6,5 @@ export interface SubtitleHandler {
   changeSubtitle(subtitle: Subtitle): Promise<boolean>;
   clearSelectedSubtitle(): void;
   canAdjustMargin(): boolean;
-  adjustMargin(offsetMultiplier: number): Promise<void>;
+  adjustMargin(offsetMultiplier: number): void;
 }
